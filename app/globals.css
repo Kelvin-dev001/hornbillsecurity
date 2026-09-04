@@ -1,0 +1,238 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ---------------------------------------------------------------------------
+   Hornbill Smart Security Services — design tokens
+   Source of truth: docs/04-design-system.md
+   Palette sampled from logo/Logo.png. Do not invent new brand colours here;
+   change the doc first, then mirror it below.
+
+   CONTRAST RULE (docs/04): white on --brand-orange measures 3.25:1 and fails
+   AA. --ink on --brand-orange measures 5.88:1. The primary button is therefore
+   orange with near-black text, which is what the logo itself does.
+   Never set --primary-foreground to white.
+
+   Dark mode is defined but NOT shipped at launch (docs/04 "Dark mode"): the
+   tokens exist so it can be switched on without a repaint. Nothing adds the
+   `.dark` class yet.
+--------------------------------------------------------------------------- */
+
+:root {
+  /* Brand palette — docs/04 §Palette */
+  --ink: #0f0f12;
+  --ink-soft: #1a1a20;
+  --brand-orange: #f85a00;
+  --brand-ember: #f83000;
+  --brand-amber: #f89000;
+  --brand-gold: #ffc400;
+  --action: #c64200;
+  --whatsapp: #25d366;
+  --paper: #ffffff;
+  --paper-warm: #faf8f6;
+  --line: #e6e2de;
+  --muted: #6b6660;
+  --success: #0e7a4e;
+  --warn: #b45309;
+  --danger: #b42318;
+
+  --brand-gradient: linear-gradient(
+    135deg,
+    var(--brand-ember) 0%,
+    var(--brand-orange) 45%,
+    var(--brand-gold) 100%
+  );
+
+  /* Semantic layer consumed by shadcn/ui components.
+     Named separately from the brand tokens above so that shadcn's surface
+     token `muted` cannot collide with the brand's secondary-text token
+     `--muted`. */
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: var(--paper);
+  --card-foreground: var(--ink);
+  --popover: var(--paper);
+  --popover-foreground: var(--ink);
+  --primary: var(--brand-orange);
+  --primary-foreground: var(--ink); /* NEVER white — see contrast rule above */
+  --secondary: var(--paper-warm);
+  --secondary-foreground: var(--ink);
+  --surface-muted: var(--paper-warm);
+  --accent: var(--paper-warm);
+  --accent-foreground: var(--action);
+  --destructive: var(--danger);
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--brand-gold);
+  --chart-1: var(--brand-ember);
+  --chart-2: var(--brand-orange);
+  --chart-3: var(--brand-amber);
+  --chart-4: var(--brand-gold);
+  --chart-5: var(--muted);
+  --sidebar: var(--paper-warm);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--brand-orange);
+  --sidebar-primary-foreground: var(--ink);
+  --sidebar-accent: var(--paper);
+  --sidebar-accent-foreground: var(--action);
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--brand-gold);
+
+  --radius: 0.5rem; /* 8px — controls (docs/04 §Layout) */
+}
+
+.dark {
+  /* Role remap only. Same palette, no new brand colours.
+     --muted-dark is the one value the doc does not specify: brand --muted
+     (#6b6660) on --ink is 3.1:1 and fails AA, so dark-mode secondary text
+     lightens to 7.0:1. */
+  --muted: #a39d95;
+  --line: color-mix(in srgb, var(--paper) 14%, transparent);
+
+  --background: var(--ink);
+  --foreground: var(--paper);
+  --card: var(--ink-soft);
+  --card-foreground: var(--paper);
+  --popover: var(--ink-soft);
+  --popover-foreground: var(--paper);
+  --primary: var(--brand-orange);
+  --primary-foreground: var(--ink); /* still not white */
+  --secondary: var(--ink-soft);
+  --secondary-foreground: var(--paper);
+  --surface-muted: var(--ink-soft);
+  --accent: var(--ink-soft);
+  --accent-foreground: var(--brand-gold); /* 11.98:1 on --ink */
+  --destructive: #f0685c;
+  --border: var(--line);
+  --input: color-mix(in srgb, var(--paper) 18%, transparent);
+  --ring: var(--brand-gold);
+  --sidebar: var(--ink-soft);
+  --sidebar-foreground: var(--paper);
+  --sidebar-primary: var(--brand-orange);
+  --sidebar-primary-foreground: var(--ink);
+  --sidebar-accent: var(--ink);
+  --sidebar-accent-foreground: var(--brand-gold);
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--brand-gold);
+}
+
+@theme inline {
+  /* Type — docs/04 §Typography. Loaded in app/layout.tsx via next/font. */
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-space-grotesk);
+  --font-heading: var(--font-space-grotesk);
+
+  /* Brand colours as Tailwind utilities: bg-ink, text-action, border-line … */
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-brand-orange: var(--brand-orange);
+  --color-brand-ember: var(--brand-ember);
+  --color-brand-amber: var(--brand-amber);
+  --color-brand-gold: var(--brand-gold);
+  --color-action: var(--action);
+  --color-whatsapp: var(--whatsapp);
+  --color-paper: var(--paper);
+  --color-paper-warm: var(--paper-warm);
+  --color-line: var(--line);
+  --color-success: var(--success);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+
+  /* Semantic colours for shadcn/ui */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--surface-muted);
+  --color-muted-foreground: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Radius — docs/04 §Layout: 8px controls, 12px cards, 999px pills */
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-control: 8px;
+  --radius-card: 12px;
+  --radius-pill: 999px;
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Containers — docs/04 §Layout: 1200px page, 1024px article body */
+  --container-page: 1200px;
+  --container-prose: 1024px;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply font-sans;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    /* docs/04: body 16px minimum, 1.6 line height */
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-display;
+    /* docs/04: headings 1.15, tight tracking on display sizes */
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+  }
+
+  /* docs/04 §Typography: tabular numerals are mandatory in every price table.
+     Column alignment is the whole point of publishing prices. */
+  table {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* docs/04 §Layout: tap targets 44px minimum */
+  a,
+  button,
+  [role="button"] {
+    touch-action: manipulation;
+  }
+}
+
+@utility brand-gradient {
+  background-image: var(--brand-gradient);
+}

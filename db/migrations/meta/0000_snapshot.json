@@ -1,0 +1,260 @@
+{
+  "id": "adddc6d3-5ec2-4617-812d-08896825f2de",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.site_settings": {
+      "name": "site_settings",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "smallint",
+          "primaryKey": true,
+          "notNull": true,
+          "default": 1
+        },
+        "legal_name": {
+          "name": "legal_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "trading_name": {
+          "name": "trading_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "company_registration_no": {
+          "name": "company_registration_no",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kra_pin": {
+          "name": "kra_pin",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "vat_registered": {
+          "name": "vat_registered",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "whatsapp_number": {
+          "name": "whatsapp_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "address_mombasa": {
+          "name": "address_mombasa",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "address_nairobi": {
+          "name": "address_nairobi",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "business_hours": {
+          "name": "business_hours",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "response_promise": {
+          "name": "response_promise",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "response_time_label": {
+          "name": "response_time_label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "authorised_partner_brands": {
+          "name": "authorised_partner_brands",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "ARRAY[]::text[]"
+        },
+        "years_operating": {
+          "name": "years_operating",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "technicians_count": {
+          "name": "technicians_count",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "service_area_label": {
+          "name": "service_area_label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "service_counties": {
+          "name": "service_counties",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "ARRAY[]::text[]"
+        },
+        "psra_registered": {
+          "name": "psra_registered",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "ca_radio_licensed": {
+          "name": "ca_radio_licensed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "mpesa_paybill": {
+          "name": "mpesa_paybill",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mpesa_account": {
+          "name": "mpesa_account",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "deposit_percent": {
+          "name": "deposit_percent",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "site_survey_fee": {
+          "name": "site_survey_fee",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "site_survey_deliverable": {
+          "name": "site_survey_deliverable",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "vat_rate": {
+          "name": "vat_rate",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quote_validity_days": {
+          "name": "quote_validity_days",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "warranty_months": {
+          "name": "warranty_months",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cancellation_notice_months": {
+          "name": "cancellation_notice_months",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "prices_updated_at": {
+          "name": "prices_updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "facebook_url": {
+          "name": "facebook_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tiktok_url": {
+          "name": "tiktok_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "instagram_url": {
+          "name": "instagram_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "youtube_url": {
+          "name": "youtube_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "site_settings_singleton": {
+          "name": "site_settings_singleton",
+          "value": "\"site_settings\".\"id\" = 1"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
