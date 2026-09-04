@@ -1,7 +1,11 @@
+import Image from "next/image";
 import Link from "next/link";
+
+import logoMono from "@/logo/whitemono version for dark backgrounds.png";
 
 import { footerNav } from "@/lib/navigation";
 import {
+  formatAddress,
   formatPhoneForDisplay,
   formatPricesUpdated,
   formatVatRate,
@@ -34,9 +38,18 @@ export async function SiteFooter() {
       <div className="mx-auto max-w-(--container-page) px-4 py-14 sm:px-6">
         <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)]">
           <div className="space-y-4">
+            {/* The white/mono cut, because the footer sits on --ink. */}
+            <Image
+              src={logoMono}
+              alt=""
+              aria-hidden="true"
+              width={48}
+              height={48}
+              className="size-12"
+            />
             <p className="font-display text-lg font-semibold">{settings.tradingName}</p>
             <address className="space-y-1 text-sm not-italic text-paper/75">
-              <p>{settings.addressMombasa}</p>
+              <p>{formatAddress(settings)}</p>
               <p>
                 <a
                   href={telLink(settings.phone)}

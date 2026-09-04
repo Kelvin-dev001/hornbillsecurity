@@ -92,6 +92,19 @@ export function telLink(nationalNumber: string): string {
   return `tel:+254${digits.replace(/^0/, "")}`;
 }
 
+/**
+ * The display address line: "Hilltop, Mwembe Tayari, Mombasa".
+ *
+ * Composed from the components so the header, footer, contact page, JSON-LD and
+ * the quotation PDF cannot drift from each other or from the Google Business
+ * Profile. Empty parts are dropped rather than leaving a dangling comma.
+ */
+export function formatAddress(settings: SiteSettings): string {
+  return [settings.addressStreet, settings.addressArea, settings.addressLocality]
+    .filter((part): part is string => Boolean(part?.trim()))
+    .join(", ");
+}
+
 /** numeric(5,2) "16.00" → "16". Trailing zeros read as false precision. */
 export function formatVatRate(vatRate: string): string {
   return String(Number(vatRate));

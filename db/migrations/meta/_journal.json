@@ -8,6 +8,20 @@
       "when": 1788530488971,
       "tag": "0000_init_site_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788554636983,
+      "tag": "0001_structured_address",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788554645428,
+      "tag": "0002_drop_address_mombasa",
+      "breakpoints": true
     }
   ]
 }

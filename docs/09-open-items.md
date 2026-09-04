@@ -8,10 +8,7 @@ Last reviewed: **2026-09-04**
 
 ## Blocking — work stops or ships wrong without these
 
-| # | Item | Status | Blocks | Notes |
-|---|---|---|---|---|
-| 2 | **Distributor price lists** for electric fencing, razor wire, gate automation, video intercom, access control & time attendance, fire & smoke detection, networking & cabling, cable management, two-way radios, smart home | `OPEN` | Sprint 6 entirely | Screenshots are fine — the CCTV ones worked perfectly. Start gathering during Sprint 1, not when Sprint 6 begins |
-| 3 | **Exact street address line** for the Mombasa office | `OPEN` | Schema.org, Google Business Profile, quotation letterhead | "Mwembe Tayari, Mombasa" is enough for copy but not for a verified listing. This becomes the canonical NAP and must never vary afterwards |
+None. All three cleared on 2026-09-04.
 
 ## Needed before launch
 
@@ -52,3 +49,5 @@ Last reviewed: **2026-09-04**
 | 27 | Business email: security@hornbilltech.co.ke | `DONE` | 2026-09-04 |
 | 28 | Hard disks confirmed as distributor cost — ×1.4 applied | `DONE` | 2026-09-04 |
 | 1 | Logo files — `Hornbill_Logo_Transparent_HighRes.png` and a white/mono version for dark backgrounds supplied in `logo/` | `DONE` | 2026-09-04 |
+| 2 | Distributor price lists — owner's decision: seed **mock prices** for the non-CCTV categories and update them from the admin portal. Seeded as normal editable rows with `price_basis = 'market_research'`, never as constants (CLAUDE.md §2.7). Sprint 6 is no longer blocked | `DONE` | 2026-09-04 |
+| 3 | Mombasa street line: **Hilltop**. Canonical NAP is `Hilltop, Mwembe Tayari, Mombasa` — stored as components in `site_settings` and used by the footer, JSON-LD and quotation PDF. Must match the Google Business Profile exactly and never vary | `DONE` | 2026-09-04 |

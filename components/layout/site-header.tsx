@@ -1,5 +1,8 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Phone } from "lucide-react";
+
+import logoMark from "@/logo/Hornbill_Logo_Transparent_HighRes.png";
 
 import { Button } from "@/components/ui/button";
 import { primaryNav } from "@/lib/navigation";
@@ -30,12 +33,18 @@ export async function SiteHeader() {
           href="/"
           className="flex items-center gap-3 rounded-control focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none"
         >
-          {/* Logo files landed 2026-09-04 (docs/09 item 1) but are not wired in
-              yet — logo/ holds raster PNGs only. The gradient mark plus the
-              wordmark stands in until they are placed in public/. */}
-          <span
+          {/* Imported from logo/ rather than copied into public/ so the brand
+              artwork has one home. next/image resizes and re-encodes the
+              1274px source at build time, and the intrinsic dimensions come
+              with the import, so there is no layout shift. */}
+          <Image
+            src={logoMark}
+            alt=""
             aria-hidden="true"
-            className="size-8 shrink-0 rounded-control brand-gradient"
+            width={36}
+            height={36}
+            priority
+            className="size-9 shrink-0"
           />
           <span className="flex flex-col leading-tight">
             <span className="font-display text-base font-semibold tracking-tight text-ink">

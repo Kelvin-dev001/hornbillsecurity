@@ -23,10 +23,15 @@ export const siteSettingsSeed: NewSiteSettings = {
   phone: "0759293030",
   whatsappNumber: "254759293030",
   email: "security@hornbilltech.co.ke",
-  // docs/09 item 3 (OPEN): the exact street line is still to be supplied.
-  // This is enough for copy but not for a verified Google listing, and once the
-  // street line lands it becomes the canonical NAP and must never vary.
-  addressMombasa: "Mwembe Tayari, Mombasa",
+  // The canonical NAP (docs/09 item 3, confirmed 2026-09-04). These five values
+  // must match the Google Business Profile character for character, and must
+  // not vary once the listing is verified — changing them later splits the
+  // local-SEO signal. Renders as "Hilltop, Mwembe Tayari, Mombasa".
+  addressStreet: "Hilltop",
+  addressArea: "Mwembe Tayari",
+  addressLocality: "Mombasa",
+  addressRegion: "Mombasa County",
+  addressCountry: "KE",
   // Nairobi is served on request only and is never marketed — CLAUDE.md §1.
   addressNairobi: null,
   businessHours: "Mon–Sat 8am–6pm",

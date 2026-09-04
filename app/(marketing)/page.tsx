@@ -3,6 +3,7 @@ import { CheckCircle2, MapPin, ShieldCheck, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { jsonLdScriptProps, localBusinessJsonLd } from "@/lib/seo/json-ld";
 import {
+  formatAddress,
   formatKes,
   formatPhoneForDisplay,
   getSiteSettings,
@@ -76,7 +77,7 @@ export default async function HomePage() {
           </div>
 
           <p className="mt-6 max-w-2xl text-sm text-muted-foreground">
-            {settings.businessHours} · {settings.addressMombasa} ·{" "}
+            {settings.businessHours} · {formatAddress(settings)} ·{" "}
             <a
               href={`mailto:${settings.email}`}
               className="text-action underline underline-offset-4"

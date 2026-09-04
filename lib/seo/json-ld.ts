@@ -29,12 +29,20 @@ export function localBusinessJsonLd(settings: SiteSettings) {
     url: absoluteUrl("/"),
     email: settings.email,
     telephone: `+254${settings.phone.replace(/^0/, "")}`,
+    // Every part comes from site_settings, so the structured address here, the
+    // footer line and the Google Business Profile cannot drift apart.
     address: {
       "@type": "PostalAddress",
-      // docs/09 item 3 (OPEN): streetAddress is added once the exact line is
-      // supplied. Publishing a guessed street line would poison the NAP.
-      addressLocality: "Mombasa",
-      addressCountry: "KE",
+      ...(settings.addressStreet
+        ? {
+            streetAddress: [settings.addressStreet, settings.addressArea]
+              .filter(Boolean)
+              .join(", "),
+          }
+        : {}),
+      ...(settings.addressLocality ? { addressLocality: settings.addressLocality } : {}),
+      ...(settings.addressRegion ? { addressRegion: settings.addressRegion } : {}),
+      ...(settings.addressCountry ? { addressCountry: settings.addressCountry } : {}),
     },
     areaServed: settings.serviceCounties.map((county) => ({
       "@type": "AdministrativeArea",

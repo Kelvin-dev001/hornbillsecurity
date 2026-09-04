@@ -46,10 +46,24 @@ export const siteSettings = pgTable(
     whatsappNumber: text("whatsapp_number").notNull(),
     email: text("email").notNull(),
     /**
-     * Mombasa office. This becomes the canonical NAP and must never vary
-     * afterwards — docs/09 item 3 is still OPEN on the exact street line.
+     * The Mombasa office address, in components rather than one free-text line.
+     *
+     * This is the canonical NAP: it must match the Google Business Profile
+     * character for character and must never vary afterwards (docs/09 item 3).
+     * Structured because schema.org PostalAddress needs the parts separately —
+     * a single blob would have forced "Mombasa" and "KE" to be hardcoded in the
+     * JSON-LD builder, which is exactly the rule this table exists to enforce.
+     *
+     * Nullable so no migration has to invent a value; formatAddress() joins
+     * whatever is set, and db/seed/site-settings.ts supplies the real thing.
      */
-    addressMombasa: text("address_mombasa").notNull(),
+    addressStreet: text("address_street"),
+    /** Neighbourhood / landmark, e.g. the area a Mombasa address is known by */
+    addressArea: text("address_area"),
+    addressLocality: text("address_locality"),
+    addressRegion: text("address_region"),
+    /** ISO 3166-1 alpha-2, for schema.org */
+    addressCountry: text("address_country"),
     /**
      * Nairobi is served on request only and never marketed (CLAUDE.md §1), so
      * this is normally null. It exists because docs/02 lists it.
