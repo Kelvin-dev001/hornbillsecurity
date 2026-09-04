@@ -10,7 +10,6 @@ Last reviewed: **2026-09-04**
 
 | # | Item | Status | Blocks | Notes |
 |---|---|---|---|---|
-| 1 | **Logo files** — SVG or high-res transparent PNG, a white/mono version for dark backgrounds, and a square crop for favicon and social profiles | `OPEN` | Sprint 0 finish, quotation PDF, OG images | Only `logo/Logo.png` exists (1274×1234, raster). Brand colours already sampled from it, so this does not block starting |
 | 2 | **Distributor price lists** for electric fencing, razor wire, gate automation, video intercom, access control & time attendance, fire & smoke detection, networking & cabling, cable management, two-way radios, smart home | `OPEN` | Sprint 6 entirely | Screenshots are fine — the CCTV ones worked perfectly. Start gathering during Sprint 1, not when Sprint 6 begins |
 | 3 | **Exact street address line** for the Mombasa office | `OPEN` | Schema.org, Google Business Profile, quotation letterhead | "Mwembe Tayari, Mombasa" is enough for copy but not for a verified listing. This becomes the canonical NAP and must never vary afterwards |
 
@@ -52,3 +51,4 @@ Last reviewed: **2026-09-04**
 | 26 | AI item-drafting assist declined — not being built | `DONE` | 2026-09-02 |
 | 27 | Business email: security@hornbilltech.co.ke | `DONE` | 2026-09-04 |
 | 28 | Hard disks confirmed as distributor cost — ×1.4 applied | `DONE` | 2026-09-04 |
+| 1 | Logo files — `Hornbill_Logo_Transparent_HighRes.png` and a white/mono version for dark backgrounds supplied in `logo/` | `DONE` | 2026-09-04 |

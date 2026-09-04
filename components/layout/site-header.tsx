@@ -30,8 +30,9 @@ export async function SiteHeader() {
           href="/"
           className="flex items-center gap-3 rounded-control focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none"
         >
-          {/* docs/09 item 1 (OPEN): an SVG / mono logo is still to be supplied,
-              so the wordmark stands in. It is deliberate, not a broken image. */}
+          {/* Logo files landed 2026-09-04 (docs/09 item 1) but are not wired in
+              yet — logo/ holds raster PNGs only. The gradient mark plus the
+              wordmark stands in until they are placed in public/. */}
           <span
             aria-hidden="true"
             className="size-8 shrink-0 rounded-control brand-gradient"
