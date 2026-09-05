@@ -22,6 +22,13 @@
       "when": 1788554645428,
       "tag": "0002_drop_address_mombasa",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788615106868,
+      "tag": "0003_catalogue",
+      "breakpoints": true
     }
   ]
 }

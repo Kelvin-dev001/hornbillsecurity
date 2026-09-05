@@ -21,14 +21,18 @@ Supabase Postgres · Drizzle ORM · Vercel.
 ```bash
 npm install
 cp .env.example .env.local     # then fill it in — every variable is documented
-npm run db:migrate             # creates site_settings
-npm run db:seed                # writes the single row of business facts
+npm run db:migrate             # schema, RLS policies, the public_items view
+npm run db:seed                # business facts, pricing rules, the catalogue
 npm run dev
 ```
 
 `npm run dev` will not render without a seeded `site_settings` row: every
 business fact on the site is read from the database and there are deliberately
 no hardcoded fallbacks.
+
+The seed reads [`docs/07-catalog-seed.csv`](./docs/07-catalog-seed.csv) — the
+owner's own price list — and is idempotent, so editing a price there and
+re-running updates the row in place.
 
 ## Scripts
 
@@ -38,9 +42,12 @@ no hardcoded fallbacks.
 | `npm run build` | Production build |
 | `npm run lint` | ESLint, including the service-role import guard |
 | `npm run typecheck` | `tsc --noEmit` |
+| `npm test` | Everything below |
+| `npm run test:unit` | The pricing rule, and its agreement with the database |
+| `npm run test:leak` | Fetches every public route and hunts for a leaked cost price |
 | `npm run db:generate` | Generate a migration from `db/schema.ts` |
 | `npm run db:migrate` | Apply migrations (uses `DATABASE_URL_DIRECT`) |
-| `npm run db:seed` | Seed / re-seed `site_settings` (idempotent) |
+| `npm run db:seed` | Seed / re-seed everything (idempotent) |
 | `npm run db:studio` | Drizzle Studio |
 
 There is deliberately no `db:push`. Migrations carry the RLS policies, and
@@ -54,6 +61,15 @@ so a client-bundle import is a build error; ESLint forbids importing it outside
 `app/api/**`, `app/admin/**` and `db/**`; and `SUPABASE_SERVICE_ROLE_KEY` may
 only be read inside that one file. Public queries use `lib/supabase/server.ts`
 with an explicit select list. See CLAUDE.md §2.3.
+
+Above that sit three more layers, because one mistake should not be enough.
+Every catalogue query reads the `public_items` view, which has no
+`cost_price` column — so `publicItems.costPrice` does not compile. The `anon`
+and `authenticated` roles hold column-level SELECT grants that exclude
+`cost_price`, `markup_multiplier` and `internal_note`, so `select *` through
+PostgREST fails closed. And `npm run test:leak` fetches all 95 public routes and
+asserts that no distributor cost appears in any response body, in the HTML or in
+the RSC payload.
 
 **2. No hostname literals.** The canonical origin is read from
 `NEXT_PUBLIC_SITE_URL` through `lib/seo/origin.ts` and nowhere else, so
@@ -71,17 +87,22 @@ repo where any of those values is written down.
 ```
 app/
   (marketing)/        home, services, locations, about, contact
+  catalog/            catalogue, category pages, item pages
   layout.tsx          fonts, header, footer, WhatsApp FAB
   robots.ts sitemap.ts
 components/
+  catalog/            ItemCard, SpecTable, price tables, facets
   layout/             header, footer
   ui/                 shadcn/ui
 lib/
+  catalog/            the read layer — public_items only
+  pricing/            effectivePrice(), mirrored by the generated column
   seo/                canonical origin, JSON-LD builders
   supabase/           browser · server · service-role clients
   site-settings.ts    getSiteSettings() and its formatters
 db/
   schema.ts migrations/ seed/
+tests/                the cost-price leak scan and the pricing rule
 docs/                 the business, schema, SEO and design documents
 ```
 

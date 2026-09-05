@@ -110,14 +110,11 @@ export function formatVatRate(vatRate: string): string {
   return String(Number(vatRate));
 }
 
-/** KES, VAT-exclusive, no decimals — CLAUDE.md §2.6. */
-export function formatKes(amount: number): string {
-  return new Intl.NumberFormat("en-KE", {
-    style: "currency",
-    currency: "KES",
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
+/**
+ * Re-exported from lib/money.ts, which carries no `server-only` marker so the
+ * cost-price leak test can use the same formatter the pages do.
+ */
+export { formatKes, formatKesPlain } from "@/lib/money";
 
 /** "Prices updated September 2026" — docs/04 §PriceStamp. */
 export function formatPricesUpdated(date: Date): string {

@@ -78,3 +78,129 @@ export function jsonLdScriptProps(data: unknown) {
     dangerouslySetInnerHTML: { __html: JSON.stringify(data) },
   } as const;
 }
+
+/**
+ * Product + Offer for an item page — docs/03 §3.
+ *
+ * `sku` and `mpn` both carry the true model number, because that is the string
+ * people search and the one an answer engine needs to match a query to a page.
+ *
+ * The price is VAT-exclusive, and says so: schema.org has no "excluding tax"
+ * flag on `price`, so a PriceSpecification with valueAddedTaxIncluded: false
+ * sits alongside it. Without that, a crawler reads our figure as VAT-inclusive
+ * and we appear 16% cheaper than we are.
+ *
+ * `priceValidUntil` is the end of the month after the last price review, which
+ * is exactly as long as the owner's monthly review cycle promises and no longer.
+ */
+export function productJsonLd(options: {
+  item: {
+    sku: string;
+    slug: string;
+    name: string;
+    shortDescription: string;
+    description: string | null;
+    price: number;
+    inStock: boolean;
+    primaryImageUrl: string | null;
+    brand: { name: string } | null;
+    category: { name: string };
+  };
+  settings: SiteSettings;
+}) {
+  const { item, settings } = options;
+  const url = absoluteUrl(`/catalog/item/${item.slug}`);
+
+  const reviewed = settings.pricesUpdatedAt;
+  const validUntil = new Date(
+    Date.UTC(reviewed.getUTCFullYear(), reviewed.getUTCMonth() + 2, 0),
+  );
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "@id": `${url}#product`,
+    name: item.name,
+    sku: item.sku,
+    mpn: item.sku,
+    category: item.category.name,
+    description: item.description ?? item.shortDescription,
+    url,
+    ...(item.primaryImageUrl ? { image: item.primaryImageUrl } : {}),
+    ...(item.brand ? { brand: { "@type": "Brand", name: item.brand.name } } : {}),
+    offers: {
+      "@type": "Offer",
+      url,
+      price: item.price,
+      priceCurrency: "KES",
+      priceValidUntil: validUntil.toISOString().slice(0, 10),
+      availability: item.inStock
+        ? "https://schema.org/InStock"
+        : "https://schema.org/BackOrder",
+      itemCondition: "https://schema.org/NewCondition",
+      priceSpecification: {
+        "@type": "PriceSpecification",
+        price: item.price,
+        priceCurrency: "KES",
+        valueAddedTaxIncluded: false,
+      },
+      seller: { "@id": absoluteUrl("/#business") },
+    },
+  };
+}
+
+/** BreadcrumbList — docs/03 §3 wants one on every page. */
+export function breadcrumbJsonLd(trail: { name: string; path: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: trail.map((step, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: step.name,
+      item: absoluteUrl(step.path),
+    })),
+  };
+}
+
+/**
+ * ItemList of Product/Offer for a listing page — docs/03 §3 for the price list
+ * and, by the same argument, for a catalogue page that publishes a full priced
+ * table. Kept to name, model, price and URL: the detail belongs on the item page,
+ * and a listing that restates all of it just makes the page bigger.
+ */
+export function itemListJsonLd(options: {
+  name: string;
+  path: string;
+  items: { sku: string; slug: string; name: string; price: number }[];
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: options.name,
+    url: absoluteUrl(options.path),
+    numberOfItems: options.items.length,
+    itemListElement: options.items.map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      item: {
+        "@type": "Product",
+        name: item.name,
+        sku: item.sku,
+        mpn: item.sku,
+        url: absoluteUrl(`/catalog/item/${item.slug}`),
+        offers: {
+          "@type": "Offer",
+          price: item.price,
+          priceCurrency: "KES",
+          priceSpecification: {
+            "@type": "PriceSpecification",
+            price: item.price,
+            priceCurrency: "KES",
+            valueAddedTaxIncluded: false,
+          },
+        },
+      },
+    })),
+  };
+}

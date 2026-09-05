@@ -2,7 +2,7 @@
 
 **How this file works.** Claude Code checks it at the start and end of every session and reminds the owner, in one line, of anything still `OPEN`. When the owner confirms an item is done, change the status to `DONE`, add the date, and stop mentioning it. Nothing here is nagged more than once per session.
 
-Last reviewed: **2026-09-04**
+Last reviewed: **2026-09-05**
 
 ---
 
@@ -24,9 +24,10 @@ None. All three cleared on 2026-09-04.
 | # | Item | Status | Notes |
 |---|---|---|---|
 | 10 | Second phone number | `OPEN` | Useful if a Nairobi profile is ever added. Not needed for a coast-only launch |
-| 11 | Model numbers for the motorized varifocal 4MP / 6MP cameras | `OPEN` | Box codes were illegible in the screenshots. Seeded as `VARIFOCAL-4MP` / `VARIFOCAL-6MP` placeholders, editable from admin |
-| 12 | Real prices for DS-KIS603-P, DS-KIS608-P, DS-KIS212, DS-KIS213, DS-7732NXI-K4/16P | `OPEN` | Seeded with market-research figures, flagged in the CSV, editable from admin |
-| 13 | Compare the 4TB and 8TB disk retail prices against the Kenyan market and set a ceiling if needed | `OPEN` | ×1.4 puts them at 33,600 and 63,000. Published Kenyan surveillance-drive listings run lower. Price transparency is the brand, so these two are worth a sanity check |
+| 11 | Model numbers for the motorized varifocal 4MP / 6MP cameras | `OPEN` | Box codes were illegible in the screenshots. Seeded as `VARIFOCAL-4MP` / `VARIFOCAL-6MP` and **held back from the site** — the whole pitch is exact model numbers, so a guessed one costs more than a missing page. Prices are already in; publishing is one click in admin once the supplier confirms |
+| 12 | Real distributor prices for DS-KIS603-P, DS-KIS608-P, DS-KIS212, DS-KIS213, DS-7732NXI-K4/16P | `OPEN` | All five **held back from the site**. The two with figures carry `price_basis = 'market_research'`, and CLAUDE.md §5 forbids marking up a researched retail figure — 26,500 × 1.4 would price us above the market, not below it. Supply a trade cost and they publish |
+| 12b | Reel length on DS-1LN6AUSPE (Cat6A outdoor) | `OPEN` | Priced at 23,000 cost, but the CSV says to confirm the reel length, so we cannot state what the price buys. Held back until you confirm — then set the unit and publish |
+| 13 | Compare the 4TB and 8TB disk retail prices against the Kenyan market and set a ceiling if needed | `OPEN` | **Both are live on the site now** at 33,600 and 63,000. Published Kenyan surveillance-drive listings run lower, so these are the two prices most likely to be undercut on a comparison. `market_ceiling_price` is in the schema and takes effect the moment you set it |
 | 13b | Validate the seeded labour rates against three real past quotes | `OPEN` | Defaults are industry-typical. Ten minutes with old quotes makes the builder genuinely accurate |
 | 14 | Product photography once stock is held | `OPEN` | Owner does not hold stock currently. Placeholders render deliberately until then — never use supplier packshots with someone else's branding |
 | 15 | PSRA registration | `IN PROGRESS` | Do not claim it on the site until confirmed. Add to the trust bar when it lands |
@@ -49,5 +50,5 @@ None. All three cleared on 2026-09-04.
 | 27 | Business email: security@hornbilltech.co.ke | `DONE` | 2026-09-04 |
 | 28 | Hard disks confirmed as distributor cost — ×1.4 applied | `DONE` | 2026-09-04 |
 | 1 | Logo files — `Hornbill_Logo_Transparent_HighRes.png` and a white/mono version for dark backgrounds supplied in `logo/` | `DONE` | 2026-09-04 |
-| 2 | Distributor price lists — owner's decision: seed **mock prices** for the non-CCTV categories and update them from the admin portal. Seeded as normal editable rows with `price_basis = 'market_research'`, never as constants (CLAUDE.md §2.7). Sprint 6 is no longer blocked | `DONE` | 2026-09-04 |
+| 2 | Distributor price lists — owner's decision: seed **mock rows** for the non-CCTV categories and price them from the admin portal. Implemented in Sprint 1 as ordinary editable rows carrying `price_basis = 'placeholder'`, never constants (CLAUDE.md §2.7). They are unpublished until priced, so the catalogue never shows a figure you did not set. Sprint 6 is no longer blocked | `DONE` | 2026-09-04 |
 | 3 | Mombasa street line: **Hilltop**. Canonical NAP is `Hilltop, Mwembe Tayari, Mombasa` — stored as components in `site_settings` and used by the footer, JSON-LD and quotation PDF. Must match the Google Business Profile exactly and never vary | `DONE` | 2026-09-04 |
