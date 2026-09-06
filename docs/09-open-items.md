@@ -2,7 +2,7 @@
 
 **How this file works.** Claude Code checks it at the start and end of every session and reminds the owner, in one line, of anything still `OPEN`. When the owner confirms an item is done, change the status to `DONE`, add the date, and stop mentioning it. Nothing here is nagged more than once per session.
 
-Last reviewed: **2026-09-05**
+Last reviewed: **2026-09-06**
 
 ---
 
@@ -18,6 +18,8 @@ None. All three cleared on 2026-09-04.
 | 7 | **Google Business Profile** — create and verify the Mombasa listing | `OPEN` | Local pack, AI local citations | Primary category **Security System Installer**. Most-cited source in AI local answers (~67% of Google AI Overview local citations). Single profile, Mombasa only, by owner's decision |
 | 8 | **Testimonials** — even three, in writing | `OPEN` | Homepage, service pages, trust | Proceeding without for now. `AggregateRating` schema stays off until real reviews exist |
 | 9 | **DNS records** — attach `security.hornbilltech.co.ke` to Vercel | `OPEN` | Custom domain | Launching on the Vercel production URL by design. Canonical origin reads from an env var, so this is a one-line switch |
+| 29 | **Trade prices for the BOM consumables** — 15 SKUs, listed in `db/seed/consumables.ts` | `OPEN` | The credibility of every package total | Your price list has the cameras, recorders, drives and Cat6. It has no RG59 siamese cable, baluns, BNC or DC connectors, RJ45, 12V power supplies, junction boxes, trunking, clips, memory cards, pole mounts or small PoE switches — and a bill of materials without them is not the product. They are seeded at estimated Mombasa trade rates, marked with a ° on every line, and each BOM states what share of its total is estimated. **On the Home Colour 4 that share is 36%.** Two SKUs carry most of it: the RG59 siamese box and the 2 m trunking length. Real prices for just those two drop it to about 11% |
+| 30 | **Sanity-check `trunking_m_per_camera` (currently 12 m)** against a real job | `OPEN` | Every package total | At 12 m per camera a 4-camera house takes 24 lengths of trunking — KES 9,600, the single largest consumable line and 13% of the Home Colour 4 total. It is the docs/01 §6 default and may well be right for a surface-run bungalow, but if most of your runs go through the roof it is roughly double what it should be. One number in admin, and all seventeen packages re-price |
 
 ## Nice to have, not blocking
 
@@ -28,7 +30,7 @@ None. All three cleared on 2026-09-04.
 | 12 | Real distributor prices for DS-KIS603-P, DS-KIS608-P, DS-KIS212, DS-KIS213, DS-7732NXI-K4/16P | `OPEN` | All five **held back from the site**. The two with figures carry `price_basis = 'market_research'`, and CLAUDE.md §5 forbids marking up a researched retail figure — 26,500 × 1.4 would price us above the market, not below it. Supply a trade cost and they publish |
 | 12b | Reel length on DS-1LN6AUSPE (Cat6A outdoor) | `OPEN` | Priced at 23,000 cost, but the CSV says to confirm the reel length, so we cannot state what the price buys. Held back until you confirm — then set the unit and publish |
 | 13 | Compare the 4TB and 8TB disk retail prices against the Kenyan market and set a ceiling if needed | `OPEN` | **Both are live on the site now** at 33,600 and 63,000. Published Kenyan surveillance-drive listings run lower, so these are the two prices most likely to be undercut on a comparison. `market_ceiling_price` is in the schema and takes effect the moment you set it |
-| 13b | Validate the seeded labour rates against three real past quotes | `OPEN` | Defaults are industry-typical. Ten minutes with old quotes makes the builder genuinely accurate |
+| 13b | Validate the seeded labour rates against three real past quotes | `OPEN` | Defaults are industry-typical. Ten minutes with old quotes makes the builder genuinely accurate. Worth doing alongside item 30 — labour is 17% of a 4-camera job at the seeded KES 3,000 a point |
 | 14 | Product photography once stock is held | `OPEN` | Owner does not hold stock currently. Placeholders render deliberately until then — never use supplier packshots with someone else's branding |
 | 15 | PSRA registration | `IN PROGRESS` | Do not claim it on the site until confirmed. Add to the trust bar when it lands |
 | 16 | Communications Authority radio frequency licence | `IN PROGRESS` | KES 19,700, 74–106 days. Do not claim until held. Worth stating the cost and lead time on the radio page regardless — it is exactly the kind of specific fact that wins a job |

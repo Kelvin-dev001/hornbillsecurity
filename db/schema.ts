@@ -534,6 +534,152 @@ export const publicItems = pgView("public_items", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
 }).existing();
 
+// ═══════════════════════════════════════════════════════════════════════════
+//  Sprint 2 — solutions and their bills of materials
+//
+//  docs/01 §3: "Every Solution line shows quantity, unit price and extended
+//  price, and totals to one number. That visible arithmetic *is* the product."
+//
+//  The mechanism that makes it honest is solution_lines.quantity_formula:
+//  quantities are expressions over pricing_rules, evaluated server-side by
+//  lib/pricing/formula.ts, never literals in a component. Change
+//  cable_m_per_camera_residential in admin and every package re-prices.
+// ═══════════════════════════════════════════════════════════════════════════
+
+export const solutionTier = pgEnum("solution_tier", ["essential", "standard", "pro"]);
+
+/**
+ * docs/01 §3. The split is the point: primary is what the client thinks they
+ * are buying, secondary is what the job actually needs and every competitor's
+ * quote leaves out, consumable is the small stuff, labour is the human work.
+ */
+export const solutionLineType = pgEnum("solution_line_type", [
+  "primary",
+  "secondary",
+  "consumable",
+  "labour",
+]);
+
+export const solutions = pgTable(
+  "solutions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    slug: text("slug").notNull().unique(),
+    name: text("name").notNull(),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => categories.id, { onDelete: "restrict" }),
+    tier: solutionTier("tier").notNull(),
+    /** home, apartment, shop, office, warehouse, school, estate, farm */
+    propertyTypes: text("property_types")
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
+    summary: text("summary").notNull(),
+    description: text("description"),
+    heroImageUrl: text("hero_image_url"),
+    /** Seeds the Solution Builder with this package's shape. */
+    isBuilderTemplate: boolean("is_builder_template").notNull().default(false),
+    /**
+     * The six answers this package is the saved result of — camera count,
+     * technology, retention days, property type and so on.
+     *
+     * A Solution is a builder configuration someone already made, which is why
+     * this mirrors quotes.builder_inputs. It is also load-bearing at render
+     * time: the quantity formulas are written over `cameras` and the pricing
+     * rules, so something has to supply `cameras`, and deriving it by guessing
+     * which lines are cameras would break the first time a package mixed two
+     * models.
+     */
+    builderInputs: jsonb("builder_inputs").$type<Record<string, unknown>>(),
+    bestFor: text("best_for")
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
+    /**
+     * CLAUDE.md §6: "Every Solution states what it is not suitable for. Honesty
+     * about limits is the strongest trust signal on the site and the most
+     * citable kind of sentence." NOT NULL by intent — a package without one is
+     * an incomplete package.
+     */
+    notSuitableFor: text("not_suitable_for")
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
+
+    /**
+     * Derived totals, VAT-exclusive KES. docs/02 asks for these to be cached on
+     * write, and the seed populates them.
+     *
+     * Public pages do NOT read them. Quantities are formulas evaluated in
+     * TypeScript, so no database trigger can recompute these when an item price
+     * changes, and docs/02 is right that a stale cache must never be trusted.
+     * The whole catalogue is in memory anyway (lib/catalog/queries.ts), so
+     * rendering recomputes from live prices and these exist for admin listing
+     * and sorting only.
+     */
+    subtotalItems: integer("subtotal_items"),
+    subtotalLabour: integer("subtotal_labour"),
+    totalExclVat: integer("total_excl_vat"),
+
+    seoTitle: text("seo_title"),
+    seoDescription: text("seo_description"),
+    published: boolean("published").notNull().default(false),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("solutions_category_published_idx").on(table.categoryId, table.published),
+  ],
+);
+
+export const solutionLines = pgTable(
+  "solution_lines",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    solutionId: uuid("solution_id")
+      .notNull()
+      .references(() => solutions.id, { onDelete: "cascade" }),
+    lineType: solutionLineType("line_type").notNull(),
+    itemId: uuid("item_id").references(() => items.id, { onDelete: "restrict" }),
+    serviceId: uuid("service_id").references(() => services.id, { onDelete: "restrict" }),
+    /** The evaluated fallback, used when quantity_formula is null. */
+    quantity: numeric("quantity", { precision: 12, scale: 3 }).notNull(),
+    /**
+     * e.g. `ceil(cameras * cable_m_per_camera_residential * cable_wastage_factor / 305)`
+     *
+     * Evaluated by lib/pricing/formula.ts against pricing_rules and the
+     * builder's variables. Never eval() — the allow-list parser is the whole
+     * reason this column is safe to have.
+     */
+    quantityFormula: text("quantity_formula"),
+    /** Optional price freeze for a published package. Normally null. */
+    unitPriceSnapshot: integer("unit_price_snapshot"),
+    /** "Includes 15% slack for drops and re-runs" */
+    note: text("note"),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("solution_lines_solution_idx").on(table.solutionId, table.sortOrder),
+    // Exactly one of item_id / service_id, per docs/02.
+    check(
+      "solution_lines_one_target",
+      sql`("item_id" is not null) <> ("service_id" is not null)`,
+    ),
+    check("solution_lines_quantity_non_negative", sql`"quantity" >= 0`),
+  ],
+);
+
+export type Solution = typeof solutions.$inferSelect;
+export type NewSolution = typeof solutions.$inferInsert;
+export type SolutionLine = typeof solutionLines.$inferSelect;
+export type NewSolutionLine = typeof solutionLines.$inferInsert;
+export type SolutionTier = (typeof solutionTier.enumValues)[number];
+export type SolutionLineType = (typeof solutionLineType.enumValues)[number];
+
 export type Category = typeof categories.$inferSelect;
 export type NewCategory = typeof categories.$inferInsert;
 export type Brand = typeof brands.$inferSelect;

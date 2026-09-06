@@ -31,7 +31,19 @@ function createDb() {
     );
   }
 
-  const client = postgres(connectionString, { prepare: false });
+  // Opening a connection to the Supabase pooler takes a second or two from
+  // here; queries themselves come back in about 250ms. connect_timeout bounds a
+  // connection that never establishes, and is set generously on purpose — a
+  // short one turns ordinary slowness into a hard build failure, which is worse
+  // than waiting. idle_timeout releases connections a build worker has finished
+  // with, so several prerendering at once do not each hold a full pool open.
+  const client = postgres(connectionString, {
+    prepare: false,
+    max: 5,
+    connect_timeout: 60,
+    idle_timeout: 20,
+  });
+
   return drizzle(client, { schema });
 }
 

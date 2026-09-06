@@ -16,7 +16,8 @@ import assert from "node:assert/strict";
 import { after, before, describe, it } from "node:test";
 
 import { formatKes, formatKesPlain } from "../lib/money";
-import { connect, readPrivatePriceRows, readPublishablePrices } from "./helpers/db";
+import { connect, readPrivatePriceRows } from "./helpers/db";
+import { readRenderableAmounts } from "./helpers/renderable";
 import { readPublicRoutes } from "./helpers/routes";
 import { startSite, type RunningSite } from "./helpers/server";
 
@@ -55,8 +56,15 @@ function buildScanners(values: number[]) {
     .join("|");
 
   return {
-    /** A bare cost sitting in a data position. */
-    asData: new RegExp(`[,:\\[{>]\\s*"?(${alternation})"?\\s*[,:\\]}<]`, "g"),
+    /**
+     * A bare cost sitting in a data position.
+     *
+     * The lookbehind matters. Without it the ",900" inside the published price
+     * "KES 11,900" reads as the number 900 preceded by a delimiter, and 900 is
+     * the cost of the 64 GB card. A thousands separator is never a structural
+     * delimiter, so the character before one cannot be a digit.
+     */
+    asData: new RegExp(`(?<!\\d)[,:\\[{>]\\s*"?(${alternation})"?\\s*[,:\\]}<]`, "g"),
     /**
      * A cost run through the site's own money formatter.
      *
@@ -84,14 +92,15 @@ describe("no cost price reaches the browser", () => {
   before(async () => {
     const [rows, publishable, discovered] = await Promise.all([
       readPrivatePriceRows(sql),
-      readPublishablePrices(sql),
+      readRenderableAmounts(sql),
       readPublicRoutes(sql),
     ]);
 
     routes = discovered;
 
-    // A cost value that happens to equal a price we legitimately publish cannot
-    // be evidence of a leak — see readPublishablePrices() for the real example.
+    // A cost value the site can legitimately arrive at — a published price, a
+    // line total, a subtotal — is not evidence of a leak. readRenderableAmounts()
+    // computes that set exactly, by running the same pricing engine the pages do.
     forbiddenValues = new Map();
     for (const row of rows) {
       if (row.cost_price === null) continue;
@@ -116,12 +125,17 @@ describe("no cost price reaches the browser", () => {
 
   it("has enough cost values to make the scan meaningful", () => {
     // Guards against the test quietly becoming vacuous — an empty items table,
-    // or a change that makes every cost coincide with a public price, would
+    // or a change that makes every cost coincide with a legitimate amount, would
     // otherwise turn this file into a lot of assertions about nothing.
+    //
+    // The threshold is deliberately well below the ~40 the seed currently yields.
+    // What it needs to catch is the set collapsing to nothing, not a few more
+    // costs colliding with the site's own arithmetic as packages are added —
+    // that will happen, and it is not a regression.
     assert.ok(
-      forbiddenValues.size >= 40,
-      `only ${forbiddenValues.size} distributor costs are distinguishable from public ` +
-        `prices; the seed should provide dozens. Has the seed run?`,
+      forbiddenValues.size >= 25,
+      `only ${forbiddenValues.size} distributor costs are distinguishable from the ` +
+        `amounts the site may legitimately print. Has the seed run?`,
     );
     assert.ok(routes.length >= 20, `only ${routes.length} public routes discovered`);
   });

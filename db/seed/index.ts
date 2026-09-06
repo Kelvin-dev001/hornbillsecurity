@@ -20,7 +20,9 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
 import { brands, categories, items, pricingRules, services, siteSettings } from "../schema";
+import { buildConsumables } from "./consumables";
 import { readCatalogCsv } from "./csv";
+import { buildSolutions } from "./build-solutions";
 import { buildAlternatives, buildCompatibility, buildItems, SERVICE_SKUS } from "./items";
 import { pricingRuleSeed } from "./pricing-rules";
 import { buildServices } from "./services";
@@ -145,6 +147,15 @@ async function main() {
       brandNameBySlug,
     });
 
+    // The parts a bill of materials needs that the owner's price list does not
+    // carry yet — baluns, connectors, trunking, small PoE switches. See the
+    // header of db/seed/consumables.ts: these are marked estimates.
+    const consumableRows = buildConsumables(
+      categoryIdBySlug,
+      brandIdBySlug.get("generic") ?? null,
+    );
+    itemRows.push(...consumableRows);
+
     await db
       .insert(items)
       .values(itemRows)
@@ -160,6 +171,11 @@ async function main() {
         .select({
           id: items.id,
           sku: items.sku,
+          name: items.name,
+          slug: items.slug,
+          shortDescription: items.shortDescription,
+          unit: items.unit,
+          priceBasis: items.priceBasis,
           categoryId: items.categoryId,
           price: items.effectivePrice,
           published: items.published,
@@ -169,8 +185,9 @@ async function main() {
 
     const publishedItems = seeded.filter((item) => item.published).length;
     console.log(
-      `✓ items (${itemRows.length} from ${csvRows.length} CSV rows; ` +
-        `${publishedItems} published, ${itemRows.length - publishedItems} held back)`,
+      `✓ items (${itemRows.length}: ${itemRows.length - consumableRows.length} from the CSV + ` +
+        `${consumableRows.length} BOM consumables; ${publishedItems} published, ` +
+        `${itemRows.length - publishedItems} held back)`,
     );
 
     // ── "works with" and alternatives ──────────────────────────────────────
@@ -234,6 +251,17 @@ async function main() {
     console.log(
       `✓ services (${serviceRows.length}; ` +
         `${serviceRows.filter((s) => s.published).length} published)`,
+    );
+
+    // ── solutions and their bills of materials ─────────────────────────────
+    const solutionResult = await buildSolutions(db, {
+      categoryIdBySlug,
+      itemsBySku: new Map(seeded.map((item) => [item.sku, item])),
+      rules: ruleValues,
+      vatRate: Number(siteSettingsSeed.vatRate),
+    });
+    console.log(
+      `✓ solutions (${solutionResult.solutions} packages, ${solutionResult.lines} BOM lines)`,
     );
 
     // ── publish the categories that have something in them ─────────────────

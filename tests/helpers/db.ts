@@ -47,32 +47,3 @@ export async function readPrivatePriceRows(
     order by sku
   `;
 }
-
-/**
- * Every number the site is allowed to print, so the leak test can tell a leaked
- * distributor price from a coincidence.
- *
- * It is a real coincidence and not a hypothetical one: the 1 TB surveillance
- * drive costs 6,500 and therefore sells for 9,100, and 9,100 is also exactly
- * what the 16-channel 7100 DVR costs us. A test that simply banned every cost
- * value from every page would fail on the drive's own published price.
- */
-export async function readPublishablePrices(
-  sql: ReturnType<typeof connect>,
-): Promise<Set<number>> {
-  const [itemPrices, servicePrices, rules, settings] = await Promise.all([
-    sql<{ v: number }[]>`select distinct effective_price as v from items
-                          where published and effective_price is not null`,
-    sql<{ v: number }[]>`select distinct price as v from services
-                          where published and price is not null`,
-    sql<{ v: string }[]>`select value as v from pricing_rules`,
-    sql<{ v: number }[]>`select site_survey_fee as v from site_settings`,
-  ]);
-
-  return new Set([
-    ...itemPrices.map((r) => r.v),
-    ...servicePrices.map((r) => r.v),
-    ...rules.map((r) => Number(r.v)),
-    ...settings.map((r) => r.v),
-  ]);
-}

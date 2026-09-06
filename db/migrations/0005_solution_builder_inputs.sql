@@ -1,0 +1,1 @@
+ALTER TABLE "solutions" ADD COLUMN "builder_inputs" jsonb;

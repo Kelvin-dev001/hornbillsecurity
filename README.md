@@ -53,7 +53,7 @@ re-running updates the row in place.
 There is deliberately no `db:push`. Migrations carry the RLS policies, and
 `push` would silently skip them.
 
-## Three rules the code enforces for you
+## Four rules the code enforces for you
 
 **1. Cost prices cannot reach the browser.** `lib/supabase/admin.ts` holds the
 service-role client, which bypasses RLS. It starts with `import "server-only"`,
@@ -76,6 +76,14 @@ the RSC payload.
 attaching `security.hornbilltech.co.ke` to the Vercel deployment later is a
 config change and nothing else.
 
+**4. No quantity is a literal.** Every BOM quantity is a formula over
+`pricing_rules` — `ceil(cameras * cable_m_per_camera_residential *
+cable_wastage_factor / 305)` — evaluated by `lib/pricing/formula.ts`, which is a
+hand-written allow-list parser and **never `eval` or `new Function`**. Those
+strings are editable from an admin form, so an evaluator with access to the
+language would be a remote code execution hole. Change one rule and all
+seventeen packages and every builder result re-price together.
+
 **3. No hardcoded business facts.** The WhatsApp number, address, M-Pesa
 paybill, VAT rate, response promise, warranty and quote validity all live in the
 single `site_settings` row and are read through `getSiteSettings()`
@@ -88,15 +96,18 @@ repo where any of those values is written down.
 app/
   (marketing)/        home, services, locations, about, contact
   catalog/            catalogue, category pages, item pages
+  solutions/          packaged systems and their bills of materials
+  build/              the Solution Builder
   layout.tsx          fonts, header, footer, WhatsApp FAB
   robots.ts sitemap.ts
 components/
   catalog/            ItemCard, SpecTable, price tables, facets
+  solutions/          BOMTable, SolutionCard, the builder's questions
   layout/             header, footer
   ui/                 shadcn/ui
 lib/
-  catalog/            the read layer — public_items only
-  pricing/            effectivePrice(), mirrored by the generated column
+  catalog/            the read layer — public_items only, plus the builder
+  pricing/            effectivePrice(), the formula evaluator, BOM expansion
   seo/                canonical origin, JSON-LD builders
   supabase/           browser · server · service-role clients
   site-settings.ts    getSiteSettings() and its formatters

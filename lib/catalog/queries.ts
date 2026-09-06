@@ -378,6 +378,23 @@ export const getItemBySlug = cache(async (slug: string): Promise<CatalogItemDeta
   };
 });
 
+/**
+ * Every published, priced item keyed by id — what a bill of materials needs to
+ * turn a solution_lines row into a priced line (lib/pricing/bom.ts).
+ */
+export const getCatalogItemsById = cache(async (): Promise<Map<string, CatalogItem>> => {
+  const { items } = await getCatalog();
+  return new Map(items.map((item) => [item.id, stripDetail(item)]));
+});
+
+/** Slug and last-modified for every item page — all the sitemap needs. */
+export const getItemSitemapEntries = cache(
+  async (): Promise<{ slug: string; updatedAt: string }[]> => {
+    const { items } = await getCatalog();
+    return items.map((item) => ({ slug: item.slug, updatedAt: item.updatedAt }));
+  },
+);
+
 /** For generateStaticParams — every item that gets its own page. */
 export const getAllItemSlugs = cache(async (): Promise<string[]> => {
   const { items } = await getCatalog();

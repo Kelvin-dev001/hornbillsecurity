@@ -29,6 +29,20 @@
       "when": 1788615106868,
       "tag": "0003_catalogue",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788637859838,
+      "tag": "0004_solutions",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1788638259900,
+      "tag": "0005_solution_builder_inputs",
+      "breakpoints": true
     }
   ]
 }

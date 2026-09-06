@@ -1,7 +1,8 @@
 import type { MetadataRoute } from "next";
 
 import { getAllCategories, getCatalogLastModified } from "@/lib/catalog/queries";
-import { getItemBySlug, getAllItemSlugs } from "@/lib/catalog/queries";
+import { getItemSitemapEntries } from "@/lib/catalog/queries";
+import { getSolutionSitemapEntries } from "@/lib/catalog/solutions";
 import { absoluteUrl } from "@/lib/seo/origin";
 import { getSiteSettings } from "@/lib/site-settings";
 
@@ -21,14 +22,13 @@ import { getSiteSettings } from "@/lib/site-settings";
  * page that 404s.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [settings, categories, itemSlugs, catalogModified] = await Promise.all([
+  const [settings, categories, items, solutions, catalogModified] = await Promise.all([
     getSiteSettings(),
     getAllCategories(),
-    getAllItemSlugs(),
+    getItemSitemapEntries(),
+    getSolutionSitemapEntries(),
     getCatalogLastModified(),
   ]);
-
-  const items = await Promise.all(itemSlugs.map((slug) => getItemBySlug(slug)));
   const catalogLastModified = catalogModified ? new Date(catalogModified) : settings.updatedAt;
 
   return [
@@ -44,6 +44,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.9,
     },
+    {
+      url: absoluteUrl("/solutions"),
+      lastModified: catalogLastModified,
+      changeFrequency: "weekly",
+      priority: 0.95,
+    },
+    {
+      url: absoluteUrl("/build"),
+      lastModified: catalogLastModified,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: absoluteUrl("/build/cctv"),
+      lastModified: catalogLastModified,
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    ...solutions.map((solution) => ({
+      url: absoluteUrl(`/solutions/${solution.slug}`),
+      lastModified: new Date(solution.updatedAt),
+      changeFrequency: "weekly" as const,
+      priority: 0.85,
+    })),
     ...categories
       .filter((category) => category.itemCount > 0)
       .map((category) => ({
@@ -53,7 +77,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.8,
       })),
     ...items
-      .filter((item): item is NonNullable<typeof item> => item !== null)
       .map((item) => ({
         url: absoluteUrl(`/catalog/item/${item.slug}`),
         lastModified: new Date(item.updatedAt),

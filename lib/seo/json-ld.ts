@@ -204,3 +204,72 @@ export function itemListJsonLd(options: {
     })),
   };
 }
+
+/**
+ * A packaged system: Product + Offer, with the BOM as an ItemList.
+ *
+ * docs/03 §3 asks for exactly this shape on a solution page. The ItemList is
+ * the part with no equivalent anywhere else in this market — a machine-readable
+ * bill of materials with a unit price on every line — and it is the reason a
+ * cost query has something citable to land on.
+ *
+ * `AggregateRating` is deliberately absent until real reviews exist (docs/09
+ * item 8). Fabricating it is a policy violation and is easily caught.
+ */
+export function solutionJsonLd(options: {
+  solution: {
+    slug: string;
+    name: string;
+    summary: string;
+    description: string | null;
+    total: number;
+    bom: {
+      lines: { sku: string | null; name: string; quantity: number; unitPrice: number }[];
+      vatRate: number;
+    };
+  };
+  settings: SiteSettings;
+}) {
+  const { solution, settings } = options;
+  const url = absoluteUrl(`/solutions/${solution.slug}`);
+
+  const reviewed = settings.pricesUpdatedAt;
+  const validUntil = new Date(Date.UTC(reviewed.getUTCFullYear(), reviewed.getUTCMonth() + 2, 0));
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "@id": `${url}#solution`,
+    name: solution.name,
+    description: solution.description ?? solution.summary,
+    url,
+    category: "CCTV installation",
+    brand: { "@type": "Brand", name: settings.tradingName },
+    offers: {
+      "@type": "Offer",
+      url,
+      price: solution.total,
+      priceCurrency: "KES",
+      priceValidUntil: validUntil.toISOString().slice(0, 10),
+      availability: "https://schema.org/InStock",
+      priceSpecification: {
+        "@type": "PriceSpecification",
+        price: solution.total,
+        priceCurrency: "KES",
+        valueAddedTaxIncluded: false,
+      },
+      seller: { "@id": absoluteUrl("/#business") },
+    },
+    isRelatedTo: {
+      "@type": "ItemList",
+      name: `${solution.name} bill of materials`,
+      numberOfItems: solution.bom.lines.length,
+      itemListElement: solution.bom.lines.map((line, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: line.name,
+        ...(line.sku ? { item: { "@type": "Product", name: line.name, sku: line.sku, mpn: line.sku } } : {}),
+      })),
+    },
+  };
+}
