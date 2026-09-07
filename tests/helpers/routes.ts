@@ -30,6 +30,10 @@ const STATIC_ROUTES = [
   "/this-route-does-not-exist",
   "/solutions",
   "/build",
+  // Empty, since the scan has no basket — but it still renders the layout and
+  // its props payload, so the private-column-name check applies. The priced
+  // version of this page is covered by tests/quote-e2e.test.ts.
+  "/quote",
 ];
 
 /**

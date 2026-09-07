@@ -30,6 +30,7 @@ export const footerNav: { heading: string; items: NavItem[] }[] = [
       { href: "/build", label: "Build your own system", sprint: 2 },
       { href: "/catalog", label: "Equipment catalogue", sprint: 1 },
       { href: "/price-list", label: "Full price list", sprint: 4 },
+      { href: "/quote", label: "Your quote", sprint: 3 },
     ],
   },
   {

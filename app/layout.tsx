@@ -3,6 +3,7 @@ import { Inter, Space_Grotesk } from "next/font/google";
 
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
+import { QuoteBar } from "@/components/quote/quote-bar";
 import { WhatsAppFAB } from "@/components/whatsapp-fab";
 import { getSiteSettings } from "@/lib/site-settings";
 import { metadataBase } from "@/lib/seo/origin";
@@ -61,6 +62,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
         </main>
         <SiteFooter />
+        <QuoteBar />
         <WhatsAppFAB />
       </body>
     </html>

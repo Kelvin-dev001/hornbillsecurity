@@ -6,6 +6,7 @@ import { Check, Phone, X } from "lucide-react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { BomTable } from "@/components/solutions/bom-table";
 import { PriceStamp } from "@/components/price-stamp";
+import { AddToQuote } from "@/components/quote/add-to-quote";
 import { Button } from "@/components/ui/button";
 import { getSolutionBySlug, getSolutionSlugs, getSolutions } from "@/lib/catalog/solutions";
 import { formatKes } from "@/lib/money";
@@ -210,7 +211,12 @@ export default async function SolutionPage({ params }: { params: Promise<{ slug:
               </dl>
 
               <div className="mt-5 flex flex-col gap-2">
-                <Button asChild size="cta">
+                <AddToQuote
+                  kind="solution"
+                  reference={solution.slug}
+                  label="Add this package to a quote"
+                />
+                <Button asChild variant="outline" size="cta">
                   <a href={whatsappLink(settings.whatsappNumber, enquiry)}>Get this on WhatsApp</a>
                 </Button>
                 <Button asChild variant="outline" size="cta">

@@ -9,6 +9,7 @@ import { ItemCard } from "@/components/catalog/item-card";
 import { PlaceholderImage } from "@/components/catalog/placeholder-image";
 import { SpecTable } from "@/components/catalog/spec-table";
 import { PriceStamp } from "@/components/price-stamp";
+import { AddToQuote } from "@/components/quote/add-to-quote";
 import { Button } from "@/components/ui/button";
 import { unitLabel } from "@/lib/catalog/format";
 import { getAllCategories, getAllItemSlugs, getItemBySlug } from "@/lib/catalog/queries";
@@ -254,7 +255,8 @@ export default async function ItemPage({ params }: { params: Promise<{ slug: str
               </p>
 
               <div className="mt-5 flex flex-col gap-2">
-                <Button asChild size="cta">
+                <AddToQuote kind="item" reference={item.slug} />
+                <Button asChild variant="outline" size="cta">
                   <a href={whatsappLink(settings.whatsappNumber, enquiry)}>
                     Ask about this on WhatsApp
                   </a>

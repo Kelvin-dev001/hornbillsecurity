@@ -216,6 +216,20 @@ export function expandBom(options: {
     });
   }
 
+  return summariseBom(lines, vatRate);
+}
+
+/**
+ * Groups and totals lines that are already priced.
+ *
+ * Split out of expandBom because the quote basket combines lines from several
+ * sources — loose items and the expanded bill of materials of one or more
+ * packages — and those are priced before they meet. Re-resolving a package's
+ * lines through the formula engine to add them up would mean matching items
+ * back by SKU and services by name, which is exactly the kind of lookup that
+ * silently pairs the wrong row.
+ */
+export function summariseBom(lines: BomLine[], vatRate: number): Bom {
   const groups: BomGroup[] = LINE_TYPE_ORDER.map((lineType) => {
     const groupLines = lines.filter((line) => line.lineType === lineType);
     return {

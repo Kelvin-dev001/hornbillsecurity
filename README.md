@@ -45,6 +45,7 @@ re-running updates the row in place.
 | `npm test` | Everything below |
 | `npm run test:unit` | The pricing rule, and its agreement with the database |
 | `npm run test:leak` | Fetches every public route and hunts for a leaked cost price |
+| `npm run test:e2e` | Walks the quote flow as an anonymous visitor |
 | `npm run db:generate` | Generate a migration from `db/schema.ts` |
 | `npm run db:migrate` | Apply migrations (uses `DATABASE_URL_DIRECT`) |
 | `npm run db:seed` | Seed / re-seed everything (idempotent) |
@@ -53,7 +54,7 @@ re-running updates the row in place.
 There is deliberately no `db:push`. Migrations carry the RLS policies, and
 `push` would silently skip them.
 
-## Four rules the code enforces for you
+## Five rules the code enforces for you
 
 **1. Cost prices cannot reach the browser.** `lib/supabase/admin.ts` holds the
 service-role client, which bypasses RLS. It starts with `import "server-only"`,
@@ -84,6 +85,14 @@ strings are editable from an admin form, so an evaluator with access to the
 language would be a remote code execution hole. Change one rule and all
 seventeen packages and every builder result re-price together.
 
+**5. A quote freezes its prices.** `quotes.lines` is a jsonb snapshot carrying
+the name, spec, unit and price of every line — and deliberately no foreign keys.
+docs/02: "A customer must be able to reopen /q/AB12CD next week and see what they
+were shown." The monthly price review, a renamed product or an unpublished SKU
+must change nothing on a quotation already issued, and
+`npm run test:e2e` proves it by repricing an item mid-test and re-reading the
+saved quote.
+
 **3. No hardcoded business facts.** The WhatsApp number, address, M-Pesa
 paybill, VAT rate, response promise, warranty and quote validity all live in the
 single `site_settings` row and are read through `getSiteSettings()`
@@ -98,16 +107,20 @@ app/
   catalog/            catalogue, category pages, item pages
   solutions/          packaged systems and their bills of materials
   build/              the Solution Builder
+  quote/              the basket and the submission form
+  q/[code]/           a saved quotation, and its PDF
   layout.tsx          fonts, header, footer, WhatsApp FAB
   robots.ts sitemap.ts
 components/
   catalog/            ItemCard, SpecTable, price tables, facets
   solutions/          BOMTable, SolutionCard, the builder's questions
+  quote/              add-to-quote, the sticky bar, the submission form
   layout/             header, footer
   ui/                 shadcn/ui
 lib/
   catalog/            the read layer — public_items only, plus the builder
   pricing/            effectivePrice(), the formula evaluator, BOM expansion
+  quote/              basket, submission, the frozen snapshot, PDF and email
   seo/                canonical origin, JSON-LD builders
   supabase/           browser · server · service-role clients
   site-settings.ts    getSiteSettings() and its formatters

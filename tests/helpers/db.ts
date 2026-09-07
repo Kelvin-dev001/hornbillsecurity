@@ -23,7 +23,15 @@ export function connect() {
     );
   }
 
-  return postgres(connectionString, { prepare: false, max: 1, onnotice: () => {} });
+  return postgres(connectionString, {
+    prepare: false,
+    max: 1,
+    onnotice: () => {},
+    // A test that blocks on a lock should fail in half a minute with a clear
+    // message, not sit there for eight. Every query here reads or writes a
+    // handful of rows.
+    connection: { statement_timeout: 30_000 },
+  });
 }
 
 export type PrivatePriceRow = {

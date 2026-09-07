@@ -673,6 +673,171 @@ export const solutionLines = pgTable(
   ],
 );
 
+// ═══════════════════════════════════════════════════════════════════════════
+//  Sprint 3 — the quote basket and saved quotes
+//
+//  docs/02 §quotes: "A quote FREEZES its line prices. A customer must be able to
+//  reopen /q/AB12CD next week and see what they were shown."
+//
+//  That is the whole design constraint. The lines are a jsonb snapshot, not
+//  foreign keys: an item renamed, repriced or unpublished after submission must
+//  not change what a customer was quoted, and the monthly price review would
+//  otherwise silently rewrite every open quote.
+// ═══════════════════════════════════════════════════════════════════════════
+
+export const quoteStatus = pgEnum("quote_status", [
+  "new",
+  "contacted",
+  "survey_booked",
+  "surveyed",
+  "quoted",
+  "won",
+  "lost",
+]);
+
+export const quoteSource = pgEnum("quote_source", [
+  "builder",
+  "solution_page",
+  "item_page",
+  "manual_admin",
+]);
+
+/**
+ * The quote basket — server-backed, cookie-keyed.
+ *
+ * The browser holds only an opaque key; the contents live here. That keeps the
+ * cookie small, keeps prices server-side, and means a basket survives the
+ * customer moving from a solution page to the builder to /quote.
+ *
+ * Rows are disposable. A basket that is never submitted is rubbish after a few
+ * weeks, and db/seed or an admin job can sweep on expires_at.
+ */
+export const quoteBaskets = pgTable(
+  "quote_baskets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /**
+     * What the cookie carries. Separate from the primary key so the value in the
+     * browser is never a database identifier.
+     */
+    cookieKey: text("cookie_key").notNull().unique(),
+    /**
+     * [{ kind: 'item' | 'solution', ref: slug, quantity }] — references, not
+     * prices. A basket shows live prices; only a submitted quote freezes them.
+     */
+    lines: jsonb("lines")
+      .$type<BasketLine[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    /** The builder answers, when the basket came from /build/cctv. */
+    builderInputs: jsonb("builder_inputs").$type<Record<string, unknown>>(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("quote_baskets_expires_idx").on(table.expiresAt)],
+);
+
+/**
+ * A line in the basket: a reference and a quantity, never a price.
+ *
+ * A `builder` line holds the query string the visitor built — the six answers
+ * and any line swaps. Storing the configuration rather than the resulting lines
+ * means the basket keeps showing live prices, exactly as an item or a package
+ * does, and the freeze happens once at submission like everything else.
+ */
+export type BasketLine = {
+  kind: "item" | "solution" | "builder";
+  /** An item slug, a solution slug, or the builder's query string. */
+  ref: string;
+  quantity: number;
+};
+
+/**
+ * A frozen quote line. Everything needed to reprint the quotation years later
+ * without consulting the catalogue.
+ */
+export type QuoteLine = {
+  kind: "item" | "solution" | "service";
+  sku: string | null;
+  name: string;
+  spec: string;
+  unit: string;
+  quantity: number;
+  unitPrice: number;
+  extended: number;
+  /** primary | secondary | consumable | labour, for the grouped table. */
+  lineType: string;
+  /** Where this line came from, so the PDF can group by package. */
+  group: string | null;
+  note: string | null;
+};
+
+export const quotes = pgTable(
+  "quotes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /**
+     * Six characters from an alphabet with no O, 0, I or 1 — docs/02. The code
+     * gets read down a phone line and written on a survey sheet, and those four
+     * are where a transcription goes wrong.
+     */
+    code: text("code").notNull().unique(),
+
+    customerName: text("customer_name").notNull(),
+    customerPhone: text("customer_phone").notNull(),
+    customerEmail: text("customer_email"),
+    county: text("county").notNull(),
+    area: text("area").notNull(),
+    propertyType: text("property_type").notNull(),
+
+    /** The six answers, so a builder quote is reproducible. */
+    builderInputs: jsonb("builder_inputs").$type<Record<string, unknown>>(),
+    /** The frozen snapshot. See the note at the top of this section. */
+    lines: jsonb("lines").$type<QuoteLine[]>().notNull(),
+
+    subtotal: integer("subtotal").notNull(),
+    vatAmount: integer("vat_amount").notNull(),
+    total: integer("total").notNull(),
+    /**
+     * Frozen too. The rate is 16% today; a quote reopened after a rate change
+     * must still show the arithmetic the customer was given.
+     */
+    vatRate: numeric("vat_rate", { precision: 5, scale: 2 }).notNull(),
+    /** Frozen from site_settings, for the same reason. */
+    validUntil: timestamp("valid_until", { withTimezone: true }).notNull(),
+    depositPercent: smallint("deposit_percent").notNull(),
+
+    status: quoteStatus("status").notNull().default("new"),
+    source: quoteSource("source").notNull(),
+    /** Internal. Never rendered on /q/[code]. */
+    notes: text("notes"),
+    pdfUrl: text("pdf_url"),
+
+    /**
+     * A salted hash of the submitter's IP, for rate limiting. Never the address
+     * itself: this table is a lead list, and a plain IP log is personal data we
+     * have no reason to keep.
+     */
+    submitterHash: text("submitter_hash"),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("quotes_status_created_idx").on(table.status, table.createdAt),
+    index("quotes_submitter_idx").on(table.submitterHash, table.createdAt),
+    check("quotes_totals_non_negative", sql`"subtotal" >= 0 and "total" >= 0`),
+  ],
+);
+
+export type QuoteBasket = typeof quoteBaskets.$inferSelect;
+export type NewQuoteBasket = typeof quoteBaskets.$inferInsert;
+export type Quote = typeof quotes.$inferSelect;
+export type NewQuote = typeof quotes.$inferInsert;
+export type QuoteStatus = (typeof quoteStatus.enumValues)[number];
+export type QuoteSource = (typeof quoteSource.enumValues)[number];
+
 export type Solution = typeof solutions.$inferSelect;
 export type NewSolution = typeof solutions.$inferInsert;
 export type SolutionLine = typeof solutionLines.$inferSelect;

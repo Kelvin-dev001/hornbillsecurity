@@ -43,6 +43,13 @@
       "when": 1788638259900,
       "tag": "0005_solution_builder_inputs",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788763140446,
+      "tag": "0006_quotes",
+      "breakpoints": true
     }
   ]
 }

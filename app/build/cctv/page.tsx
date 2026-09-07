@@ -7,6 +7,7 @@ import { BomTable } from "@/components/solutions/bom-table";
 import { BuilderQuestion } from "@/components/solutions/builder-question";
 import { PriceStamp } from "@/components/price-stamp";
 import { Button } from "@/components/ui/button";
+import { addBuiltSystemAction } from "@/lib/quote/actions";
 import { buildBudgetAlternative, buildSystem } from "@/lib/catalog/builder";
 import {
   builderHref,
@@ -77,6 +78,14 @@ export default async function CctvBuilderPage({
     `${answers.cameras} ${answers.technology === "analog" ? "analog" : "IP"} camera` +
     `${answers.cameras === 1 ? "" : "s"} on a ${PROPERTY_LABELS[answers.propertyType].toLowerCase()}, ` +
     `${answers.retentionDays} days of footage`;
+
+  // The configuration as a query string, so the basket line can regenerate and
+  // reprice exactly what is on screen.
+  const configuration = new URLSearchParams(
+    Object.entries(params).flatMap(([key, value]) =>
+      value === undefined ? [] : [[key, Array.isArray(value) ? (value[0] ?? "") : value]],
+    ),
+  ).toString();
 
   const enquiry =
     `Hello Hornbill. I built a system on your site: ${summary}. ` +
@@ -250,10 +259,17 @@ export default async function CctvBuilderPage({
               ) : null}
 
               <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-                <Button asChild size="cta">
-                  <a href={whatsappLink(settings.whatsappNumber, enquiry)}>
-                    Send this to us on WhatsApp
-                  </a>
+                {/* The line stores this exact configuration, so the basket keeps
+                    repricing it and the survey knows what was asked for. */}
+                <form action={addBuiltSystemAction} className="sm:flex-1">
+                  <input type="hidden" name="ref" value={configuration} />
+                  <input type="hidden" name="answers" value={JSON.stringify(answers)} />
+                  <Button type="submit" size="cta" className="w-full">
+                    Get this quoted
+                  </Button>
+                </form>
+                <Button asChild variant="outline" size="cta">
+                  <a href={whatsappLink(settings.whatsappNumber, enquiry)}>WhatsApp instead</a>
                 </Button>
                 <Button asChild variant="outline" size="cta">
                   <a href={telLink(settings.phone)}>
@@ -263,8 +279,8 @@ export default async function CctvBuilderPage({
                 </Button>
               </div>
               <p className="mt-3 text-xs text-muted-foreground">
-                Saving a quote to its own page with a PDF arrives in the next sprint. For now the
-                WhatsApp message carries the configuration.
+                &ldquo;Get this quoted&rdquo; saves it with a reference code and a PDF, and holds
+                these prices for {settings.quoteValidityDays} days.
               </p>
             </section>
 

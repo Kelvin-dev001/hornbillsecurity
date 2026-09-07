@@ -2,7 +2,7 @@
 
 **How this file works.** Claude Code checks it at the start and end of every session and reminds the owner, in one line, of anything still `OPEN`. When the owner confirms an item is done, change the status to `DONE`, add the date, and stop mentioning it. Nothing here is nagged more than once per session.
 
-Last reviewed: **2026-09-06**
+Last reviewed: **2026-09-07**
 
 ---
 
@@ -19,6 +19,8 @@ None. All three cleared on 2026-09-04.
 | 8 | **Testimonials** — even three, in writing | `OPEN` | Homepage, service pages, trust | Proceeding without for now. `AggregateRating` schema stays off until real reviews exist |
 | 9 | **DNS records** — attach `security.hornbilltech.co.ke` to Vercel | `OPEN` | Custom domain | Launching on the Vercel production URL by design. Canonical origin reads from an env var, so this is a one-line switch |
 | 29 | **Trade prices for the BOM consumables** — 15 SKUs, listed in `db/seed/consumables.ts` | `OPEN` | The credibility of every package total | Your price list has the cameras, recorders, drives and Cat6. It has no RG59 siamese cable, baluns, BNC or DC connectors, RJ45, 12V power supplies, junction boxes, trunking, clips, memory cards, pole mounts or small PoE switches — and a bill of materials without them is not the product. They are seeded at estimated Mombasa trade rates, marked with a ° on every line, and each BOM states what share of its total is estimated. **On the Home Colour 4 that share is 36%.** Two SKUs carry most of it: the RG59 siamese box and the 2 m trunking length. Real prices for just those two drop it to about 11% |
+| 31 | **Resend account and API key** — `RESEND_API_KEY` in `.env.local` and on Vercel | `OPEN` | The quotation email | Free tier is 3,000 emails a month, which is far more than this needs. Without it the quote still saves, `/q/[code]` still works and the PDF still downloads — only the two emails are skipped. Until `security.hornbilltech.co.ke` is verified with Resend, mail goes out from their `onboarding@resend.dev`; verify the domain and set `RESEND_FROM_EMAIL` when DNS lands (item 9) |
+| 32 | **Set `QUOTE_HASH_SALT`** to any long random string | `OPEN` | Nothing, but do it before launch | Salts the hashed submitter address behind quote rate limiting. It falls back to `DATABASE_URL`, which works — but then rotating the database password also resets everyone's rate limit. `openssl rand -hex 32` |
 | 30 | **Sanity-check `trunking_m_per_camera` (currently 12 m)** against a real job | `OPEN` | Every package total | At 12 m per camera a 4-camera house takes 24 lengths of trunking — KES 9,600, the single largest consumable line and 13% of the Home Colour 4 total. It is the docs/01 §6 default and may well be right for a surface-run bungalow, but if most of your runs go through the roof it is roughly double what it should be. One number in admin, and all seventeen packages re-price |
 
 ## Nice to have, not blocking

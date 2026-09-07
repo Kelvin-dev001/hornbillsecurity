@@ -61,6 +61,15 @@ export async function startSite(): Promise<RunningSite> {
     return { baseUrl: local, origin: "already running", stop: async () => {} };
   }
 
+  const fallback = `http://localhost:${FALLBACK_PORT}`;
+  if (await answers(fallback)) {
+    // Node runs test files in parallel, so the leak scan and the end-to-end walk
+    // both reach this point. Whichever arrives second shares the server the
+    // first started rather than failing on EADDRINUSE — and does not stop it,
+    // since it does not own it.
+    return { baseUrl: fallback, origin: "already running", stop: async () => {} };
+  }
+
   if (!existsSync(".next/BUILD_ID")) {
     throw new Error(
       "No server to test against. Either start one (`npm run dev`) or build first " +
@@ -68,7 +77,7 @@ export async function startSite(): Promise<RunningSite> {
     );
   }
 
-  const baseUrl = `http://localhost:${FALLBACK_PORT}`;
+  const baseUrl = fallback;
 
   // The next binary is run directly rather than through `npx` with shell: true.
   // A shell wrapper means child.kill() kills the shell and orphans the server,
