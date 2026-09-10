@@ -140,9 +140,9 @@ export default async function HomePage() {
               This is what a quote should look like
             </h2>
             <p className="mt-4 text-muted-foreground">
-              Here is our {example.name.toLowerCase()}, in full. Not a range, not
-              &ldquo;from&rdquo;, not a figure with the workings hidden. Compare it against any
-              other quote you have been given.
+              Here is the {example.name}, in full. Not a range, not &ldquo;from&rdquo;, not a
+              figure with the workings hidden. Compare it against any other quote you have been
+              given.
             </p>
             <PriceStamp settings={settings} className="mt-3" />
           </div>

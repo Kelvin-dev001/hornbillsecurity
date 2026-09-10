@@ -5,7 +5,11 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { SolutionCard } from "@/components/solutions/solution-card";
 import { PriceStamp } from "@/components/price-stamp";
 import { Button } from "@/components/ui/button";
-import { getSolutions } from "@/lib/catalog/solutions";
+import {
+  cheapestCompleteSystem,
+  completeSystems,
+  getSolutions,
+} from "@/lib/catalog/solutions";
 import { formatKes } from "@/lib/money";
 import { breadcrumbJsonLd, jsonLdScriptProps } from "@/lib/seo/json-ld";
 import { absoluteUrl } from "@/lib/seo/origin";
@@ -29,12 +33,13 @@ const TRAIL = [
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
   const solutions = await getSolutions(Number(settings.vatRate));
-  const cheapest = Math.min(...solutions.map((solution) => solution.total));
+  const complete = completeSystems(solutions);
+  const cheapest = cheapestCompleteSystem(solutions);
 
   return {
     title: "CCTV packages — complete systems, priced line by line",
     description:
-      `${solutions.length} complete CCTV systems from ${formatKes(cheapest)} installed, ` +
+      `${complete.length} complete CCTV systems from ${formatKes(cheapest)} installed, ` +
       `VAT-exclusive. Every camera, every metre of cable, every connector and the labour, ` +
       `itemised. ${settings.tradingName}, ${settings.serviceAreaLabel}.`,
     alternates: { canonical: absoluteUrl("/solutions") },

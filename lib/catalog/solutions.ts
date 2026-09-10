@@ -261,3 +261,26 @@ export const getSolutionSitemapEntries = cache(
     return raw.map((solution) => ({ slug: solution.slug, updatedAt: solution.updatedAt }));
   },
 );
+
+/**
+ * The cheapest package that is actually a complete system, and the set it came
+ * from.
+ *
+ * The standalone packages — the nanny cams and the wire-free solar camera —
+ * record to a card in the camera and have no recorder, no drive and no cabling.
+ * The cheapest of them is a fraction of a four-camera install, so putting it
+ * behind the words "complete systems from" promises something that does not
+ * exist at that price. That is precisely the "from" price this site exists to be
+ * the opposite of, and it had shipped on the location pages and in the
+ * /solutions metadata before anyone read the rendered sentence.
+ *
+ * Any page writing a "from" price uses this, so the figure and the cards under
+ * it cannot disagree.
+ */
+export function completeSystems(solutions: SolutionDetail[]): SolutionDetail[] {
+  return solutions.filter((solution) => !solution.answers.standalone);
+}
+
+export function cheapestCompleteSystem(solutions: SolutionDetail[]): number {
+  return Math.min(...completeSystems(solutions).map((solution) => solution.total));
+}

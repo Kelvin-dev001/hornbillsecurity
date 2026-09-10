@@ -7,7 +7,7 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { PriceStamp } from "@/components/price-stamp";
 import { SolutionCard } from "@/components/solutions/solution-card";
 import { Button } from "@/components/ui/button";
-import { getSolutions } from "@/lib/catalog/solutions";
+import { cheapestCompleteSystem, completeSystems, getSolutions } from "@/lib/catalog/solutions";
 import { getLocationBySlug, getLocations } from "@/lib/content/queries";
 import { formatKes } from "@/lib/money";
 import {
@@ -49,7 +49,7 @@ export async function generateMetadata({
 
   const settings = await getSiteSettings();
   const solutions = await getSolutions(Number(settings.vatRate));
-  const cheapest = Math.min(...solutions.map((solution) => solution.total));
+  const cheapest = cheapestCompleteSystem(solutions);
 
   return {
     title:
@@ -76,12 +76,11 @@ export default async function LocationServicePage({
   if (!location) notFound();
 
   const solutions = await getSolutions(Number(settings.vatRate));
-  const featured = solutions
-    .filter((solution) => !solution.answers.standalone)
+  const featured = completeSystems(solutions)
     .sort((a, b) => a.total - b.total)
     .slice(0, 3);
 
-  const cheapest = Math.min(...solutions.map((solution) => solution.total));
+  const cheapest = cheapestCompleteSystem(solutions);
   const nearby = locations.filter((other) => other.slug !== location.slug).slice(0, 6);
 
   const trail = [

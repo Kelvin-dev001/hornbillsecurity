@@ -7,7 +7,7 @@ import { PriceStamp } from "@/components/price-stamp";
 import { SolutionCard } from "@/components/solutions/solution-card";
 import { Button } from "@/components/ui/button";
 import { getPublicServices, serviceUnitPhrase } from "@/lib/catalog/services";
-import { getSolutions } from "@/lib/catalog/solutions";
+import { cheapestCompleteSystem, completeSystems, getSolutions } from "@/lib/catalog/solutions";
 import { getLocations } from "@/lib/content/queries";
 import { formatKes } from "@/lib/money";
 import {
@@ -38,7 +38,7 @@ const trail = [
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
   const solutions = await getSolutions(Number(settings.vatRate));
-  const cheapest = Math.min(...solutions.map((solution) => solution.total));
+  const cheapest = cheapestCompleteSystem(solutions);
 
   return {
     title: `CCTV installation in ${settings.serviceAreaLabel} — itemised prices`,
@@ -83,9 +83,7 @@ export default async function CctvInstallationPage() {
     getPublicServices(),
   ]);
 
-  const packages = solutions
-    .filter((solution) => !solution.answers.standalone)
-    .sort((a, b) => a.total - b.total);
+  const packages = completeSystems(solutions).sort((a, b) => a.total - b.total);
   const featured = packages.slice(0, 6);
   const cheapest = packages[0]?.total ?? 0;
 
