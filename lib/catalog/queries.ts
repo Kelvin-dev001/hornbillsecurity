@@ -16,7 +16,7 @@ import type {
   SortKey,
 } from "./types";
 import { PRICE_BANDS } from "./types";
-import { CACHE_TTL_SECONDS } from "@/lib/cache";
+import { CACHE_TTL_SECONDS, readWithRetry } from "@/lib/cache";
 
 /**
  * The catalogue's read layer.
@@ -187,7 +187,7 @@ const loadCatalog = unstable_cache(
 );
 
 /** Deduped per render, cached across renders and revalidated by tag in Sprint 4. */
-const getCatalog = cache(loadCatalog);
+const getCatalog = cache(() => readWithRetry(loadCatalog, "catalog"));
 
 // ── the public surface ─────────────────────────────────────────────────────
 

@@ -76,9 +76,37 @@ Per page, from the raw HTML — real `<table>` elements, `KES` amounts and JSON-
 | `/blog/cctv-installation-cost-kenya-itemised-bill-of-materials` | 105 kB | 3 | 240 | 4 |
 | `/catalog/item/hikvision-ds-2cd1043g2-liuf-sl` | 121 kB | 1 | 26 | 4 |
 
+## The build failure that the prebuild clear exposed
+
+Worth reading before touching `db/index.ts` or `lib/cache.ts`.
+
+Clearing the read cache before every build (above) means all 88 routes hit
+Supabase cold at the same moment. Under that burst a trivial query —
+`select … from site_settings limit 1` — came back `57014 canceling statement
+due to statement timeout`, and **Next does not retry a query that errors**. It
+retries its own 120-second prerender timeout, but a failed read is a hard
+prerender failure, so one slow moment ended the whole export.
+
+Two changes, and both are needed:
+
+- `db/index.ts` drops the pool from `max: 5` to `max: 3`. Next prerenders with
+  several worker processes and each holds its own pool, so five per worker was
+  what saturated the pooler in the first place. Three covers the parallel reads
+  a single page makes.
+- `lib/cache.ts` retries a transient failure — statement timeout, connection
+  loss, too many connections — with a short backoff. A read is safe to retry by
+  definition. A *real* error (a missing column, a bad query) still fails at
+  once, because retrying it three times only makes a broken build slower to
+  diagnose.
+
+`tests/read-retry.test.ts` covers the guard, including the exact nesting the
+failure arrived in: postgres.js wraps the driver error and Drizzle wraps that
+again, so the code that matters is two levels down. If a dependency bump moves
+it, that test fails instead of the next production build.
+
 ## One build characteristic worth knowing
 
-A build with a cold read cache produces a burst of prerender timeouts that then retry and succeed — around eleven on a 160-page build. Every prerender worker misses the persisted cache at the same moment and they all reach Supabase together; once the first read lands, the rest are served from cache. `staticPageGenerationTimeout` is set to 120 s to absorb it.
+A build with a cold read cache produces a burst of prerender timeouts that then retry and succeed — around a dozen on an 88-route build. Every prerender worker misses the persisted cache at the same moment and they all reach Supabase together; once the first read lands, the rest are served from cache. `staticPageGenerationTimeout` is set to 120 s to absorb it.
 
 It is noisy rather than broken, and a warm build produces none. If a Vercel build ever fails outright on this, raise the timeout rather than reducing the page count.
 

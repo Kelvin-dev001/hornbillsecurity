@@ -5,7 +5,7 @@ import { unstable_cache } from "next/cache";
 
 import { db } from "@/db";
 import { siteSettings, type SiteSettings } from "@/db/schema";
-import { CACHE_TTL_SECONDS } from "@/lib/cache";
+import { CACHE_TTL_SECONDS, readWithRetry } from "@/lib/cache";
 
 export const SITE_SETTINGS_CACHE_TAG = "site-settings";
 
@@ -59,7 +59,7 @@ const loadSiteSettings = unstable_cache(
 );
 
 export const getSiteSettings = cache(async (): Promise<SiteSettings> => {
-  const row = await loadSiteSettings();
+  const row = await readWithRetry(loadSiteSettings, "site_settings");
 
   return {
     ...row,

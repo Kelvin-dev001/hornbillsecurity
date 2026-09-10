@@ -6,7 +6,7 @@ import { and, asc, desc, eq, isNotNull } from "drizzle-orm";
 
 import { db } from "@/db";
 import { faqs, locations, posts, projects, solutions, testimonials } from "@/db/schema";
-import { CACHE_TTL_SECONDS } from "@/lib/cache";
+import { CACHE_TTL_SECONDS, readWithRetry } from "@/lib/cache";
 
 /**
  * The content read layer.
@@ -67,7 +67,7 @@ const loadPosts = unstable_cache(
   { tags: [CONTENT_CACHE_TAG], revalidate: CACHE_TTL_SECONDS },
 );
 
-export const getPosts = cache(loadPosts);
+export const getPosts = cache(() => readWithRetry(loadPosts, "posts"));
 
 export const getPostBySlug = cache(async (slug: string): Promise<PostDetail | null> => {
   return (await getPosts()).find((post) => post.slug === slug) ?? null;
@@ -111,7 +111,7 @@ const loadLocations = unstable_cache(
   { tags: [CONTENT_CACHE_TAG], revalidate: CACHE_TTL_SECONDS },
 );
 
-export const getLocations = cache(loadLocations);
+export const getLocations = cache(() => readWithRetry(loadLocations, "locations"));
 
 export const getLocationBySlug = cache(async (slug: string): Promise<LocationSummary | null> => {
   return (await getLocations()).find((location) => location.slug === slug) ?? null;
@@ -196,7 +196,7 @@ const loadProjects = unstable_cache(
   { tags: [CONTENT_CACHE_TAG], revalidate: CACHE_TTL_SECONDS },
 );
 
-export const getProjects = cache(loadProjects);
+export const getProjects = cache(() => readWithRetry(loadProjects, "projects"));
 
 export const getProjectBySlug = cache(async (slug: string): Promise<ProjectSummary | null> => {
   return (await getProjects()).find((project) => project.slug === slug) ?? null;

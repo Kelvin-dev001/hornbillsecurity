@@ -104,7 +104,7 @@ repo where any of those values is written down.
 ```
 app/
   (marketing)/        home, about, contact, faq
-    services/         labour rates, the CCTV service page, service x location
+    services/         labour rates, a page per service line, service x location
     locations/        coverage, and a page per coast area
     price-list/       every published price, and a page per brand
   catalog/            catalogue, category pages, item pages
@@ -130,7 +130,8 @@ components/
 lib/
   admin/              auth, the price panel, CSV, bulk review, media,
                       content editors, the review-request builder
-  cache.ts            the one TTL every cached reader shares — read the comment
+  cache.ts            the shared TTL, and the transient-read retry that keeps
+                      one slow query from failing a whole build
   catalog/            the read layer — public_items only, plus the builder
   pricing/            effectivePrice(), the formula evaluator, BOM expansion
   quote/              basket, submission, the frozen snapshot, PDF and email

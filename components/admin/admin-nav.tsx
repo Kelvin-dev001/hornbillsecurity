@@ -25,6 +25,7 @@ const SECTIONS = [
   { href: "/admin/faqs", label: "FAQs" },
   { href: "/admin/solutions", label: "Packages" },
   { href: "/admin/services", label: "Services" },
+  { href: "/admin/categories", label: "Categories" },
   { href: "/admin/rules", label: "Quantity rules" },
   { href: "/admin/media", label: "Images" },
   { href: "/admin/settings", label: "Business details" },

@@ -59,29 +59,40 @@ const STATIC_ROUTES = [
 const BUILDER_ROUTES = BUILDER_VARIANTS.map((variant) => `/build/cctv${variant.query}`);
 
 export async function readPublicRoutes(sql: ReturnType<typeof connect>): Promise<string[]> {
-  const [categories, items, solutions, locations, posts, projects, brands] = await Promise.all([
-    sql<{ slug: string }[]>`select slug from categories where published order by slug`,
-    sql<{ slug: string }[]>`
-      select slug from items where published and effective_price is not null order by slug
-    `,
-    sql<{ slug: string }[]>`select slug from solutions where published order by slug`,
-    sql<{ slug: string }[]>`select slug from locations where published order by slug`,
-    sql<{ slug: string }[]>`
-      select slug from posts where published and published_at is not null order by slug
-    `,
-    sql<{ slug: string }[]>`select slug from projects where published order by slug`,
-    // The same rule /price-list/[brand] generates on: a real manufacturer with
-    // at least three published, priced models.
-    sql<{ slug: string }[]>`
-      select b.slug
-      from brands b
-      join items i on i.brand_id = b.id and i.published and i.effective_price is not null
-      where b.is_manufacturer
-      group by b.slug
-      having count(*) >= 3
-      order by b.slug
-    `,
-  ]);
+  // These names line up positionally with the queries below. Keep them in step.
+  const [categories, items, solutions, locations, posts, projects, serviceLines, brands] =
+    await Promise.all([
+      sql<{ slug: string }[]>`select slug from categories where published order by slug`,
+      sql<{ slug: string }[]>`
+        select slug from items where published and effective_price is not null order by slug
+      `,
+      sql<{ slug: string }[]>`select slug from solutions where published order by slug`,
+      sql<{ slug: string }[]>`select slug from locations where published order by slug`,
+      sql<{ slug: string }[]>`
+        select slug from posts where published and published_at is not null order by slug
+      `,
+      sql<{ slug: string }[]>`select slug from projects where published order by slug`,
+      // Service lines — Sprint 6. Every one of these renders a rate table or an
+      // equipment table, so they belong in the scan. The gate is the same one
+      // the page itself uses: a service category somebody has written copy for,
+      // which is deliberately NOT the catalogue's `published` flag.
+      sql<{ slug: string }[]>`
+        select slug from categories
+        where kind = 'service' and service_intro is not null and slug <> 'cctv'
+        order by slug
+      `,
+      // The same rule /price-list/[brand] generates on: a real manufacturer with
+      // at least three published, priced models.
+      sql<{ slug: string }[]>`
+        select b.slug
+        from brands b
+        join items i on i.brand_id = b.id and i.published and i.effective_price is not null
+        where b.is_manufacturer
+        group by b.slug
+        having count(*) >= 3
+        order by b.slug
+      `,
+    ]);
 
   return [
     ...STATIC_ROUTES,
@@ -94,6 +105,7 @@ export async function readPublicRoutes(sql: ReturnType<typeof connect>): Promise
       `/services/cctv-installation/${l.slug}`,
       `/locations/${l.slug}`,
     ]),
+    ...serviceLines.map((line) => `/services/${line.slug}`),
     ...brands.map((b) => `/price-list/${b.slug}`),
     ...posts.map((p) => `/blog/${p.slug}`),
     ...projects.map((p) => `/projects/${p.slug}`),

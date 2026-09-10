@@ -5,7 +5,11 @@ import { Check } from "lucide-react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { PriceStamp } from "@/components/price-stamp";
 import { Button } from "@/components/ui/button";
-import { getServicesByCategory, serviceUnitPhrase } from "@/lib/catalog/services";
+import {
+  getServiceLines,
+  getServicesByCategory,
+  serviceUnitPhrase,
+} from "@/lib/catalog/services";
 import { formatKes } from "@/lib/money";
 import { breadcrumbJsonLd, jsonLdScriptProps, offerListJsonLd } from "@/lib/seo/json-ld";
 import { absoluteUrl } from "@/lib/seo/origin";
@@ -36,7 +40,11 @@ const trail = [
 ];
 
 export default async function ServicesPage() {
-  const [settings, groups] = await Promise.all([getSiteSettings(), getServicesByCategory()]);
+  const [settings, groups, lines] = await Promise.all([
+    getSiteSettings(),
+    getServicesByCategory(),
+    getServiceLines(),
+  ]);
 
   return (
     <>
@@ -81,17 +89,50 @@ export default async function ServicesPage() {
           <PriceStamp settings={settings} className="mt-4" />
         </header>
 
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Link
-            href="/services/cctv-installation"
-            className="rounded-card border border-line bg-paper-warm p-5 transition-colors hover:border-brand-orange/60"
-          >
-            <h2 className="font-display text-lg font-semibold text-ink">CCTV installation</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Complete systems, itemised. What we install, what it costs, and where we cover.
-            </p>
-            <p className="mt-3 text-sm font-medium text-action">Read the service page →</p>
-          </Link>
+        {/*
+          Every service line gets a page — docs/05 Sprint 6. Lines with nothing
+          priced yet still have one: the copy, the honest limits and the FAQ are
+          worth reading without a price, and the page says plainly that prices
+          are not published for that line rather than inventing one.
+        */}
+        <section className="mt-12" aria-labelledby="lines">
+          <h2 id="lines" className="font-display text-xl font-semibold text-ink">
+            What we install
+          </h2>
+          <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <li>
+              <Link
+                href="/services/cctv-installation"
+                className="flex h-full flex-col gap-1 rounded-card border border-line bg-paper-warm p-4 transition-colors hover:border-brand-orange/60"
+              >
+                <span className="font-medium text-ink">CCTV installation</span>
+                <span className="text-sm text-muted-foreground">
+                  Complete systems, itemised, with the packages and the builder.
+                </span>
+              </Link>
+            </li>
+            {lines
+              .filter((line) => line.slug !== "cctv")
+              .map((line) => (
+                <li key={line.slug}>
+                  <Link
+                    href={`/services/${line.slug}`}
+                    className="flex h-full flex-col gap-1 rounded-card border border-line bg-paper p-4 transition-colors hover:border-brand-orange/60"
+                  >
+                    <span className="font-medium text-ink">{line.name}</span>
+                    <span className="text-sm text-muted-foreground">{line.summary}</span>
+                    {line.itemCount === 0 ? (
+                      <span className="mt-1 text-xs text-muted-foreground">
+                        Quoted from survey — prices not yet published
+                      </span>
+                    ) : null}
+                  </Link>
+                </li>
+              ))}
+          </ul>
+        </section>
+
+        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Link
             href="/build/cctv"
             className="rounded-card border border-line bg-paper p-5 transition-colors hover:border-brand-orange/60"

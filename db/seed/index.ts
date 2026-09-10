@@ -18,7 +18,7 @@ import { rm } from "node:fs/promises";
 import { join } from "node:path";
 
 import { config } from "dotenv";
-import { inArray, sql as raw } from "drizzle-orm";
+import { eq, inArray, sql as raw } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
@@ -35,6 +35,7 @@ import {
 } from "../schema";
 import { buildConsumables } from "./consumables";
 import { buildFaqs } from "./faqs";
+import { servicePageSeed } from "./service-pages";
 import { buildPosts } from "./posts";
 import { locationSeed } from "./locations";
 import { readCatalogCsv } from "./csv";
@@ -144,6 +145,28 @@ async function main() {
         )
         .onConflictDoUpdate({ target: categories.slug, set: categorySet });
     }
+
+    // ── service-page copy ──────────────────────────────────────────────────
+    // Sprint 6: one page per service line. Applied by slug and overwritten on
+    // re-seed, because these are the site's own words about what it does rather
+    // than the owner's editorial — /admin/categories is where he changes them,
+    // and a change there is a deliberate edit to a page, not a data import.
+    //
+    // No price is written here. Every figure on a service page is read from the
+    // catalogue at render, so a line with nothing priced shows no price rather
+    // than an invented one (docs/08 Sprint 6).
+    for (const page of servicePageSeed) {
+      await db
+        .update(categories)
+        .set({
+          serviceIntro: page.intro,
+          serviceIncludes: page.includes,
+          serviceNotFor: page.notFor,
+          serviceFaq: page.faq,
+        })
+        .where(eq(categories.slug, page.slug));
+    }
+    console.log(`✓ service pages (${servicePageSeed.length} service lines)`);
 
     const categoryRows = await db.select().from(categories);
     const categoryIdBySlug = new Map(categoryRows.map((c) => [c.slug, c.id]));

@@ -11,6 +11,19 @@ const nextConfig: NextConfig = {
    */
   staticPageGenerationTimeout: 120,
 
+  /**
+   * The CCTV service line's page is hand-written at /services/cctv-installation
+   * because it carries the packages and the builder, while every other line
+   * renders from /services/[slug] keyed on the category slug — which for CCTV is
+   * `cctv`. So /services/cctv is a plausible URL with nothing behind it, and a
+   * permanent redirect is better than a 404 on a guessable path.
+   */
+  async redirects() {
+    return [
+      { source: "/services/cctv", destination: "/services/cctv-installation", permanent: true },
+    ];
+  },
+
   images: {
     /**
      * Photographs uploaded through the admin live in Supabase Storage, so

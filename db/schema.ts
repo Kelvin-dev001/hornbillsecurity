@@ -262,8 +262,39 @@ export const categories = pgTable(
     icon: text("icon"),
     /** 1–2 lines. Used in cards and as the meta description. */
     summary: text("summary").notNull(),
-    /** Long copy for service pages (Sprint 4+). */
+    /** Long copy for service pages, markdown. */
     body: text("body"),
+    /**
+     * The service page, for a category with kind = 'service' — Sprint 6.
+     *
+     * docs/05 Sprint 6 gives every service line "a service page, a category in
+     * the catalogue, seeded items, at least two packaged Solutions with full
+     * BOMs, and a cost article". These four columns are that page's copy.
+     *
+     * They live on the category rather than in a component because of
+     * CLAUDE.md §2.7's principle: the owner edits what the site says, and the
+     * thirteen service lines are the pages most likely to need correcting as he
+     * reads them back. /admin/categories edits them.
+     *
+     * `serviceNotFor` is not optional in spirit. CLAUDE.md §6: "Every Solution
+     * states what it is not suitable for. Honesty about limits is the strongest
+     * trust signal on the site and the most citable kind of sentence." The same
+     * applies to a service line — and on the lines where we are weakest, it is
+     * the only thing on the page a competitor would not also claim.
+     */
+    serviceIntro: text("service_intro"),
+    serviceIncludes: text("service_includes")
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
+    serviceNotFor: text("service_not_for")
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
+    serviceFaq: jsonb("service_faq")
+      .$type<FaqEntry[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     sortOrder: integer("sort_order").notNull().default(0),
     seoTitle: text("seo_title"),
     seoDescription: text("seo_description"),

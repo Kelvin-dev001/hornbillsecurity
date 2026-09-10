@@ -10,7 +10,7 @@ import { expandBom, type Bom, type BomItem, type BomLineInput, type BomService }
 import type { CctvAnswers } from "@/lib/pricing/cctv";
 import { getCatalogItemsById } from "./queries";
 import { CATALOG_CACHE_TAG } from "./queries";
-import { CACHE_TTL_SECONDS } from "@/lib/cache";
+import { CACHE_TTL_SECONDS, readWithRetry } from "@/lib/cache";
 
 /**
  * Packages and their bills of materials.
@@ -231,20 +231,26 @@ function priceSolution(
 }
 
 export const getSolutions = cache(async (vatRate: number): Promise<SolutionDetail[]> => {
-  const [raw, context] = await Promise.all([loadSolutions(), getPricingContext()]);
+  const [raw, context] = await Promise.all([
+      readWithRetry(loadSolutions, "solutions"),
+      getPricingContext(),
+    ]);
   return raw.map((solution) => priceSolution(solution, context, vatRate));
 });
 
 export const getSolutionBySlug = cache(
   async (slug: string, vatRate: number): Promise<SolutionDetail | null> => {
-    const [raw, context] = await Promise.all([loadSolutions(), getPricingContext()]);
+    const [raw, context] = await Promise.all([
+      readWithRetry(loadSolutions, "solutions"),
+      getPricingContext(),
+    ]);
     const found = raw.find((solution) => solution.slug === slug);
     return found ? priceSolution(found, context, vatRate) : null;
   },
 );
 
 export const getSolutionSlugs = cache(async (): Promise<string[]> => {
-  const raw = await loadSolutions();
+  const raw = await readWithRetry(loadSolutions, "solutions");
   return raw.map((solution) => solution.slug);
 });
 
@@ -257,7 +263,7 @@ export const getSolutionSlugs = cache(async (): Promise<string[]> => {
  */
 export const getSolutionSitemapEntries = cache(
   async (): Promise<{ slug: string; updatedAt: string }[]> => {
-    const raw = await loadSolutions();
+    const raw = await readWithRetry(loadSolutions, "solutions");
     return raw.map((solution) => ({ slug: solution.slug, updatedAt: solution.updatedAt }));
   },
 );

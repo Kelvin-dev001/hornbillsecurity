@@ -37,9 +37,19 @@ function createDb() {
   // short one turns ordinary slowness into a hard build failure, which is worse
   // than waiting. idle_timeout releases connections a build worker has finished
   // with, so several prerendering at once do not each hold a full pool open.
+  // max is deliberately small. Next prerenders with several worker processes and
+  // each one holds its own pool, so `max: 5` meant up to five connections per
+  // worker hammering the Supabase pooler the moment a cold build starts — and
+  // under that burst even `select … from site_settings limit 1` came back
+  // `57014 canceling statement due to statement timeout`, which is a hard
+  // prerender failure rather than something Next retries. Three is enough for
+  // the parallel reads a single page makes.
+  //
+  // lib/cache.ts also retries a transient failure, which is the backstop: this
+  // reduces how often the burst happens, that survives it when it does.
   const client = postgres(connectionString, {
     prepare: false,
-    max: 5,
+    max: 3,
     connect_timeout: 60,
     idle_timeout: 20,
   });

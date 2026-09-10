@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 
 import { getAllCategories, getCatalogLastModified } from "@/lib/catalog/queries";
 import { getItemSitemapEntries, listItems, brandFacets } from "@/lib/catalog/queries";
+import { getServiceLines } from "@/lib/catalog/services";
 import { getSolutionSitemapEntries } from "@/lib/catalog/solutions";
 import { getLocations, getPosts, getProjects } from "@/lib/content/queries";
 import { absoluteUrl } from "@/lib/seo/origin";
@@ -38,6 +39,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     posts,
     projects,
     catalogue,
+    serviceLines,
   ] = await Promise.all([
     getSiteSettings(),
     getAllCategories(),
@@ -48,6 +50,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     getPosts(),
     getProjects(),
     listItems(),
+    getServiceLines(),
   ]);
 
   const catalogLastModified = catalogModified ? new Date(catalogModified) : settings.updatedAt;
@@ -164,6 +167,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.7,
       },
     ]),
+    // One page per service line — docs/05 Sprint 6. The CCTV line has its own
+    // hand-written page, already listed above, so it is excluded here.
+    ...serviceLines
+      .filter((line) => line.slug !== "cctv")
+      .map((line) => ({
+        url: absoluteUrl(`/services/${line.slug}`),
+        lastModified: new Date(line.updatedAt),
+        changeFrequency: "monthly" as const,
+        priority: 0.75,
+      })),
     ...brands.map((brand) => ({
       url: absoluteUrl(`/price-list/${brand.key}`),
       lastModified: catalogLastModified,
