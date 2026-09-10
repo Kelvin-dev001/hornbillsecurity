@@ -49,6 +49,7 @@ re-running updates the row in place.
 | `npm run db:generate` | Generate a migration from `db/schema.ts` |
 | `npm run db:migrate` | Apply migrations (uses `DATABASE_URL_DIRECT`) |
 | `npm run db:seed` | Seed / re-seed everything (idempotent) |
+| `npm run docs:pricing` | Regenerate `docs/12-distributor-pricing-worksheet.md` — every row waiting on a price from the owner, by SKU |
 | `npm run db:studio` | Drizzle Studio |
 
 There is deliberately no `db:push`. Migrations carry the RLS policies, and
@@ -143,6 +144,7 @@ db/
   schema.ts migrations/ seed/
 scripts/
   clear-read-cache.mjs  prebuild; read its header before removing it
+  pricing-worksheet.mjs generates docs/12 from the database
 tests/                the cost-price leak scan and the pricing rule
 docs/                 the business, schema, SEO and design documents
 ```
