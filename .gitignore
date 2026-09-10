@@ -41,3 +41,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Throwaway query scripts used while debugging. Real tooling lives in scripts/.
+scratch-*
