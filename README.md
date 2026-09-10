@@ -103,14 +103,21 @@ repo where any of those values is written down.
 
 ```
 app/
-  (marketing)/        home, services, locations, about, contact
+  (marketing)/        home, about, contact, faq
+    services/         labour rates, the CCTV service page, service x location
+    locations/        coverage, and a page per coast area
+    price-list/       every published price, and a page per brand
   catalog/            catalogue, category pages, item pages
   solutions/          packaged systems and their bills of materials
   build/              the Solution Builder
   quote/              the basket and the submission form
   q/[code]/           a saved quotation, and its PDF
+  blog/               the guides
+  projects/           case studies
+  admin/              the portal, auth-gated and noindex
+  api/                quote summary, CSV export
   layout.tsx          fonts, header, footer, WhatsApp FAB
-  robots.ts sitemap.ts
+  robots.ts sitemap.ts llms.txt/
 components/
   catalog/            ItemCard, SpecTable, price tables, facets
   solutions/          BOMTable, SolutionCard, the builder's questions
@@ -118,9 +125,12 @@ components/
   layout/             header, footer
   ui/                 shadcn/ui
 lib/
+  admin/              auth, the price panel, CSV, bulk review, media
+  cache.ts            the one TTL every cached reader shares — read the comment
   catalog/            the read layer — public_items only, plus the builder
   pricing/            effectivePrice(), the formula evaluator, BOM expansion
   quote/              basket, submission, the frozen snapshot, PDF and email
+  content/            posts, locations, projects, testimonials, FAQs; markdown
   seo/                canonical origin, JSON-LD builders
   supabase/           browser · server · service-role clients
   site-settings.ts    getSiteSettings() and its formatters
@@ -129,6 +139,25 @@ db/
 tests/                the cost-price leak scan and the pricing rule
 docs/                 the business, schema, SEO and design documents
 ```
+
+## Caching, and the one trap in it
+
+Every reader in `lib/` wraps its query in `unstable_cache` with a tag, so an
+admin save can bust it with `revalidateTag`. Two things to know before you
+touch that:
+
+- **`unstable_cache` round-trips its payload through JSON.** A `Date` comes back
+  as a string on a cache *hit* — and only on a hit, so the bug passes the first
+  request and fails the second. The cached functions therefore return ISO
+  strings in their types, and the caller rehydrates. Do not widen those types
+  back to `Date`.
+- **An entry with no `revalidate` never expires, and it is persisted to
+  `.next/cache/fetch-cache`, which survives across builds and deployments.**
+  That once made a build serve five articles as 404 because an earlier build had
+  cached an empty list. `lib/cache.ts` now puts a ceiling on every entry, and
+  `npm run db:seed` clears the cache directory when it finishes. If content is
+  in the database and missing from the site, clear that directory before
+  doubting the query. `docs/11-launch-checklist.md` has the full story.
 
 ## Accessibility
 

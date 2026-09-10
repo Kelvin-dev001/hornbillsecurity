@@ -14,13 +14,29 @@
  *   solutions + solution_lines → locations → projects → testimonials → posts
  * Everything from solutions onwards arrives in Sprint 2 and later.
  */
+import { rm } from "node:fs/promises";
+import { join } from "node:path";
+
 import { config } from "dotenv";
 import { inArray, sql as raw } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
-import { brands, categories, items, pricingRules, services, siteSettings } from "../schema";
+import {
+  brands,
+  categories,
+  faqs,
+  items,
+  posts,
+  locations,
+  pricingRules,
+  services,
+  siteSettings,
+} from "../schema";
 import { buildConsumables } from "./consumables";
+import { buildFaqs } from "./faqs";
+import { buildPosts } from "./posts";
+import { locationSeed } from "./locations";
 import { readCatalogCsv } from "./csv";
 import { buildSolutions } from "./build-solutions";
 import { buildAlternatives, buildCompatibility, buildItems, SERVICE_SKUS } from "./items";
@@ -77,6 +93,7 @@ async function main() {
       .values(
         brandSeed.map((brand) => ({
           ...brand,
+          isManufacturer: brand.isManufacturer ?? true,
           isAuthorisedPartner: authorised.has(brand.name.toLowerCase()),
         })),
       )
@@ -264,6 +281,112 @@ async function main() {
       `✓ solutions (${solutionResult.solutions} packages, ${solutionResult.lines} BOM lines)`,
     );
 
+    // ── locations ──────────────────────────────────────────────────────────
+    // docs/03 §2: the coast set, and no Nairobi page. These are published on
+    // seed because each carries real local copy rather than a template.
+    await db
+      .insert(locations)
+      .values(
+        locationSeed.map((location, index) => ({
+          slug: location.slug,
+          name: location.name,
+          county: location.county,
+          lat: String(location.lat),
+          lng: String(location.lng),
+          intro: location.intro,
+          localNotes: location.localNotes,
+          sortOrder: index * 10,
+          published: true,
+        })),
+      )
+      .onConflictDoUpdate({
+        target: locations.slug,
+        set: overwriteAllExcept(locations, ["id", "slug"]),
+      });
+    console.log(`✓ locations (${locationSeed.length} coast pages, no Nairobi)`);
+
+    // ── faqs ───────────────────────────────────────────────────────────────
+    // Every answer restates something already settled in the docs. The owner
+    // edits them from admin afterwards, so this table is truncated and rewritten
+    // rather than upserted on a natural key it does not have — but only on the
+    // rows the seed itself wrote, which is why it matches on the question text.
+    const faqRows = buildFaqs({
+      siteSurveyFee: siteSettingsSeed.siteSurveyFee,
+      depositPercent: siteSettingsSeed.depositPercent,
+      quoteValidityDays: siteSettingsSeed.quoteValidityDays,
+      warrantyMonths: siteSettingsSeed.warrantyMonths,
+      vatRate: siteSettingsSeed.vatRate,
+      mpesaPaybill: siteSettingsSeed.mpesaPaybill,
+      mpesaAccount: siteSettingsSeed.mpesaAccount,
+      serviceAreaLabel: siteSettingsSeed.serviceAreaLabel,
+      responsePromise: siteSettingsSeed.responsePromise,
+    });
+
+    const existingFaqs = await db.select({ question: faqs.question }).from(faqs);
+    const existingQuestions = new Set(existingFaqs.map((row) => row.question));
+    const newFaqs = faqRows.filter((row) => !existingQuestions.has(row.question));
+    if (newFaqs.length > 0) await db.insert(faqs).values(newFaqs);
+    console.log(`✓ faqs (${faqRows.length} seeded, ${newFaqs.length} new)`);
+
+    // ── posts ──────────────────────────────────────────────────────────────
+    // The launch articles. Their price tables are rendered from the same Bom
+    // objects the package pages use, so an article cannot quote a figure the
+    // site does not carry. Inserted once and then owned by the owner: a
+    // re-seed must never overwrite an article he has edited in admin.
+    const postRows = buildPosts({
+      boms: solutionResult.boms,
+      serviceRates: new Map(
+        serviceRows.map((row) => [
+          row.slug,
+          { name: row.name, price: row.price, pricingUnit: row.pricingUnit },
+        ]),
+      ),
+      rules: ruleValues,
+      pricesUpdatedAt: siteSettingsSeed.pricesUpdatedAt,
+      vatRate: Number(siteSettingsSeed.vatRate),
+      siteSurveyFee: siteSettingsSeed.siteSurveyFee,
+      warrantyMonths: siteSettingsSeed.warrantyMonths,
+      quoteValidityDays: siteSettingsSeed.quoteValidityDays,
+      depositPercent: siteSettingsSeed.depositPercent,
+    });
+
+    // Inserted if absent, refreshed only while the seed still owns the row.
+    //
+    // "Owns" means updated_at is still equal to created_at — nobody has edited
+    // it in admin. That distinction matters in both directions: a correction to
+    // a launch article (an invented figure, a wrong link) has to be deliverable
+    // by re-seeding, and an article the owner has since rewritten must never be
+    // silently overwritten by a re-seed.
+    const existingPosts = await db
+      .select({ slug: posts.slug, createdAt: posts.createdAt, updatedAt: posts.updatedAt })
+      .from(posts);
+    const ownedBySeed = new Set(
+      existingPosts
+        .filter((row) => row.updatedAt.getTime() === row.createdAt.getTime())
+        .map((row) => row.slug),
+    );
+    const edited = new Set(
+      existingPosts.filter((row) => !ownedBySeed.has(row.slug)).map((row) => row.slug),
+    );
+
+    const writablePosts = postRows.filter((row) => !edited.has(row.slug as string));
+    let refreshed = 0;
+    if (writablePosts.length > 0) {
+      await db
+        .insert(posts)
+        .values(writablePosts)
+        .onConflictDoUpdate({
+          target: posts.slug,
+          set: overwriteAllExcept(posts, ["id", "slug", "createdAt", "updatedAt"]),
+        });
+      refreshed = writablePosts.filter((row) => ownedBySeed.has(row.slug as string)).length;
+    }
+    console.log(
+      `✓ posts (${postRows.length} launch articles, ` +
+        `${writablePosts.length - refreshed} new, ${refreshed} refreshed` +
+        `${edited.size > 0 ? `, ${edited.size} left alone because they were edited` : ""})`,
+    );
+
     // ── publish the categories that have something in them ─────────────────
     // A category page with no items is thin content, so publication is derived
     // rather than declared: a category is published when it, or any descendant,
@@ -300,8 +423,36 @@ async function main() {
     } else {
       console.log("✓ every distributor row's retail column matches cost x 1.40");
     }
+    await dropStaleReadCache();
   } finally {
     await client.end();
+  }
+}
+
+/**
+ * Throw away Next's persisted read cache, because the seed has just changed the
+ * database behind the running app's back.
+ *
+ * Every reader in lib/ wraps its query in `unstable_cache`, and those entries are
+ * written to `.next/cache/fetch-cache`, which survives across builds. The app
+ * busts them with `revalidateTag` when the owner saves something in admin — but a
+ * seed run is not an admin save, so nothing tells the cache anything.
+ *
+ * The failure that made this necessary: articles were seeded, the site rebuilt,
+ * and every article rendered as a 404 because an earlier build had cached an
+ * empty posts list. lib/cache.ts now puts a one-hour ceiling on every entry so
+ * the same thing self-heals in production; this makes it immediate locally, so a
+ * build straight after a seed reflects what was just seeded.
+ */
+async function dropStaleReadCache() {
+  const cacheDir = join(process.cwd(), ".next", "cache", "fetch-cache");
+  try {
+    await rm(cacheDir, { recursive: true, force: true });
+    console.log("✓ cleared .next/cache/fetch-cache so the next build sees this data");
+  } catch (error) {
+    // Never fail a seed over a cache directory. Worst case the next build serves
+    // data up to CACHE_TTL_SECONDS old, which is the documented behaviour.
+    console.warn(`! could not clear the Next read cache: ${(error as Error).message}`);
   }
 }
 

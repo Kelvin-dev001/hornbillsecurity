@@ -17,7 +17,7 @@ import { after, before, describe, it } from "node:test";
 
 import { formatKes, formatKesPlain } from "../lib/money";
 import { connect, readPrivatePriceRows } from "./helpers/db";
-import { readRenderableAmounts } from "./helpers/renderable";
+import { readAmbiguousNumbers, readRenderableAmounts } from "./helpers/renderable";
 import { readPublicRoutes } from "./helpers/routes";
 import { startSite, type RunningSite } from "./helpers/server";
 
@@ -39,13 +39,20 @@ const FORBIDDEN_STRINGS = [
  * names `AC1200` and `OAP1200`, and 15,000 is a camera's cost and also the
  * price-band facet key `?price=5000-15000`. Both are meaningless coincidences.
  *
- * A leak, by contrast, arrives in one of exactly two shapes:
+ * A leak arrives in one of two shapes:
  *
  *   1. Rendered as money, through our own formatter — "KSh 15,000".
- *   2. As a data value: a bare number in JSON-LD, in the RSC flight payload, in
- *      an API response, or alone inside an HTML element. In every one of those
- *      it is bounded by a structural character — , : [ { > or a quote — never by
- *      a letter, which is what distinguishes it from `AC1200`.
+ *   2. As a bare data value: in JSON-LD, in the RSC flight payload, in an API
+ *      response, inside an HTML element, in an attribute, or interpolated into
+ *      an ordinary sentence.
+ *
+ * What separates shape 2 from a coincidence is that the value **stands alone as
+ * a token**, not the particular character beside it. An earlier version of this
+ * test demanded a structural delimiter (`, : [ { >` or a quote) on both sides,
+ * and that was too narrow: a cost interpolated into a template string renders
+ * between two spaces and went straight through. It was found by planting a real
+ * leak on /price-list and watching the scan stay silent — which is the only way
+ * a gap like that is ever found, so plant one again after editing this file.
  *
  * Both shapes are checked. The two coincidences above match neither.
  */
@@ -57,14 +64,22 @@ function buildScanners(values: number[]) {
 
   return {
     /**
-     * A bare cost sitting in a data position.
+     * A bare cost standing alone as a token, wherever on the page it sits.
      *
-     * The lookbehind matters. Without it the ",900" inside the published price
-     * "KES 11,900" reads as the number 900 preceded by a delimiter, and 900 is
-     * the cost of the 64 GB card. A thousands separator is never a structural
-     * delimiter, so the character before one cannot be a digit.
+     * The word / dot / slash / dash guards reject a value glued to something
+     * larger: `AC1200` has a letter before it, and both halves of
+     * `?price=5000-15000` have a dash on their inner side.
+     *
+     * Commas need one more distinction, because a comma is both a JSON delimiter
+     * and a thousands separator. `"costPrice":1150,` must match; the ",900"
+     * inside the published price "KES 11,900" must not, because 900 is the cost
+     * of the 64 GB card. So a comma disqualifies a match only when it is acting
+     * as a separator — a digit immediately before it, or immediately after.
      */
-    asData: new RegExp(`(?<!\\d)[,:\\[{>]\\s*"?(${alternation})"?\\s*[,:\\]}<]`, "g"),
+    asData: new RegExp(
+      `(?<![\\w./\\-–—])(?<!\\d,)(${alternation})(?![\\w./\\-–—])(?!,\\d)`,
+      "g",
+    ),
     /**
      * A cost run through the site's own money formatter.
      *
@@ -90,9 +105,10 @@ describe("no cost price reaches the browser", () => {
   let scanners: ReturnType<typeof buildScanners>;
 
   before(async () => {
-    const [rows, publishable, discovered] = await Promise.all([
+    const [rows, publishable, ambiguous, discovered] = await Promise.all([
       readPrivatePriceRows(sql),
       readRenderableAmounts(sql),
+      readAmbiguousNumbers(sql),
       readPublicRoutes(sql),
     ]);
 
@@ -105,6 +121,10 @@ describe("no cost price reaches the browser", () => {
     for (const row of rows) {
       if (row.cost_price === null) continue;
       if (publishable.has(row.cost_price)) continue;
+      // A number the catalogue's own specifications already contain — 350 is a
+      // PTZ's pan angle as well as a connector pack's cost — cannot be told from
+      // a leak by looking at the page. See readAmbiguousNumbers().
+      if (ambiguous.has(row.cost_price)) continue;
       const owners = forbiddenValues.get(row.cost_price) ?? [];
       owners.push(row.sku);
       forbiddenValues.set(row.cost_price, owners);

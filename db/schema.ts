@@ -273,6 +273,19 @@ export const brands = pgTable("brands", {
    * site_settings.authorised_partner_brands so the two cannot disagree.
    */
   isAuthorisedPartner: boolean("is_authorised_partner").notNull().default(false),
+  /**
+   * A real manufacturer, as opposed to the "Unbranded / OEM" catch-all every
+   * catalogue needs for cable, connectors and clips.
+   *
+   * Only manufacturers get a /price-list/[brand] page. `hikvision price list
+   * kenya` is a verified query worth a page (docs/03 §4 Tier 1); "Unbranded /
+   * OEM price list" is not a query anybody has ever typed, and generating it
+   * would put a page on the site whose title is nonsense.
+   *
+   * A column rather than a slug literal in the route, so the rule stays in the
+   * data where the owner can change it.
+   */
+  isManufacturer: boolean("is_manufacturer").notNull().default(true),
   logoUrl: text("logo_url"),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -812,6 +825,12 @@ export const quotes = pgTable(
     source: quoteSource("source").notNull(),
     /** Internal. Never rendered on /q/[code]. */
     notes: text("notes"),
+    /**
+     * When to chase this one. docs/08 Sprint 4 asks for it beside the notes,
+     * and it is what turns a list of leads into a working day: the admin
+     * overview leads with everything due or overdue.
+     */
+    followUpAt: timestamp("follow_up_at", { withTimezone: true }),
     pdfUrl: text("pdf_url"),
 
     /**
@@ -830,6 +849,152 @@ export const quotes = pgTable(
     check("quotes_totals_non_negative", sql`"subtotal" >= 0 and "total" >= 0`),
   ],
 );
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Sprint 4 — content
+//
+//  docs/03 §2: "Service × location is the engine." The location pages are where
+//  transactional intent lands, and docs/01 §1 is blunt about why they are worth
+//  building: the Kenyan coast is empty. AreaSpy holds 28 Nairobi area pages and
+//  zero coast pages, and Jiji's entire Mombasa CCTV-installation category
+//  returns four listings.
+//
+//  docs/02 is equally blunt about the risk: "A location page with nothing but a
+//  find-and-replaced town name is thin content and will be treated as such."
+//  Hence local_notes, featured projects and a real landmark on every one.
+// ═══════════════════════════════════════════════════════════════════════════
+
+export const locations = pgTable(
+  "locations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    slug: text("slug").notNull().unique(),
+    name: text("name").notNull(),
+    county: text("county").notNull(),
+    parentId: uuid("parent_id").references((): AnyPgColumn => locations.id, {
+      onDelete: "set null",
+    }),
+    lat: numeric("lat", { precision: 9, scale: 6 }),
+    lng: numeric("lng", { precision: 9, scale: 6 }),
+    /** Genuinely local copy, not a template with the name swapped. */
+    intro: text("intro").notNull(),
+    /**
+     * The specific fact that makes the page worth reading: a landmark, a
+     * completed job, a condition peculiar to the area. Salt air in Nyali,
+     * estate access rules, the port-corridor traffic.
+     */
+    localNotes: text("local_notes").notNull(),
+    seoTitle: text("seo_title"),
+    seoDescription: text("seo_description"),
+    sortOrder: integer("sort_order").notNull().default(0),
+    published: boolean("published").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("locations_published_idx").on(table.published, table.sortOrder)],
+);
+
+/** A question and its answer, rendered as real markup and as FAQPage JSON-LD. */
+export type FaqEntry = { question: string; answer: string };
+
+export const posts = pgTable(
+  "posts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    slug: text("slug").notNull().unique(),
+    title: text("title").notNull(),
+    excerpt: text("excerpt").notNull(),
+    /** Markdown, rendered server-side. Never raw HTML — see lib/content/markdown.ts. */
+    body: text("body").notNull(),
+    coverImageUrl: text("cover_image_url"),
+    author: text("author").notNull(),
+    category: text("category").notNull(),
+    tags: text("tags")
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
+    /**
+     * docs/02: "faq renders as real Q/A markup and as FAQPage JSON-LD."
+     * docs/03 §3 wants FAQPage on the cost pages specifically, which are the
+     * ones AI Overviews trigger on ~80% of the time.
+     */
+    faq: jsonb("faq")
+      .$type<FaqEntry[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    seoTitle: text("seo_title"),
+    seoDescription: text("seo_description"),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    published: boolean("published").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("posts_published_idx").on(table.published, table.publishedAt)],
+);
+
+export const projects = pgTable("projects", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  slug: text("slug").notNull().unique(),
+  title: text("title").notNull(),
+  clientName: text("client_name"),
+  /**
+   * Naming a client without written permission is how a reference becomes a
+   * complaint. docs/09 item 22 records permission for two of them.
+   */
+  clientNamedOk: boolean("client_named_ok").notNull().default(false),
+  locationId: uuid("location_id").references(() => locations.id, { onDelete: "set null" }),
+  categoryId: uuid("category_id").references(() => categories.id, { onDelete: "set null" }),
+  summary: text("summary").notNull(),
+  challenge: text("challenge"),
+  solution: text("solution"),
+  outcome: text("outcome"),
+  images: text("images")
+    .array()
+    .notNull()
+    .default(sql`ARRAY[]::text[]`),
+  solutionId: uuid("solution_id").references(() => solutions.id, { onDelete: "set null" }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  published: boolean("published").notNull().default(false),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const testimonials = pgTable("testimonials", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  author: text("author").notNull(),
+  role: text("role"),
+  company: text("company"),
+  locationId: uuid("location_id").references(() => locations.id, { onDelete: "set null" }),
+  quote: text("quote").notNull(),
+  rating: smallint("rating"),
+  source: text("source"),
+  published: boolean("published").notNull().default(false),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Site-wide FAQs, separate from the per-article ones. */
+export const faqs = pgTable("faqs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  question: text("question").notNull(),
+  answer: text("answer").notNull(),
+  group: text("group").notNull().default("General"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  published: boolean("published").notNull().default(true),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type Location = typeof locations.$inferSelect;
+export type NewLocation = typeof locations.$inferInsert;
+export type Post = typeof posts.$inferSelect;
+export type NewPost = typeof posts.$inferInsert;
+export type Project = typeof projects.$inferSelect;
+export type NewProject = typeof projects.$inferInsert;
+export type Testimonial = typeof testimonials.$inferSelect;
+export type NewTestimonial = typeof testimonials.$inferInsert;
+export type Faq = typeof faqs.$inferSelect;
+export type NewFaq = typeof faqs.$inferInsert;
 
 export type QuoteBasket = typeof quoteBaskets.$inferSelect;
 export type NewQuoteBasket = typeof quoteBaskets.$inferInsert;

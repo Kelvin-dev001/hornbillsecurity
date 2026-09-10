@@ -10,6 +10,7 @@ import { expandBom, type Bom, type BomItem, type BomLineInput, type BomService }
 import type { CctvAnswers } from "@/lib/pricing/cctv";
 import { getCatalogItemsById } from "./queries";
 import { CATALOG_CACHE_TAG } from "./queries";
+import { CACHE_TTL_SECONDS } from "@/lib/cache";
 
 /**
  * Packages and their bills of materials.
@@ -69,7 +70,7 @@ export const getPricingRules = cache(
       return Object.fromEntries(rows.map((row) => [row.key, Number(row.value)]));
     },
     ["pricing-rules"],
-    { tags: [CATALOG_CACHE_TAG] },
+    { tags: [CATALOG_CACHE_TAG], revalidate: CACHE_TTL_SECONDS },
   ),
 );
 
@@ -96,7 +97,7 @@ export const getBomServices = cache(
       }));
     },
     ["bom-services"],
-    { tags: [CATALOG_CACHE_TAG] },
+    { tags: [CATALOG_CACHE_TAG], revalidate: CACHE_TTL_SECONDS },
   ),
 );
 
@@ -159,7 +160,7 @@ const loadSolutions = unstable_cache(
     }));
   },
   ["solutions"],
-  { tags: [CATALOG_CACHE_TAG] },
+  { tags: [CATALOG_CACHE_TAG], revalidate: CACHE_TTL_SECONDS },
 );
 
 /**

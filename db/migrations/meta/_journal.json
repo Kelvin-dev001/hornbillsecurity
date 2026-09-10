@@ -50,6 +50,34 @@
       "when": 1788763140446,
       "tag": "0006_quotes",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1788782391310,
+      "tag": "0007_lead_follow_up",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1788782671542,
+      "tag": "0008_media_storage",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1788782916132,
+      "tag": "0009_content",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1788785067745,
+      "tag": "0010_add_brand_is_manufacturer",
+      "breakpoints": true
     }
   ]
 }

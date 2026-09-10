@@ -16,6 +16,7 @@ import type {
   SortKey,
 } from "./types";
 import { PRICE_BANDS } from "./types";
+import { CACHE_TTL_SECONDS } from "@/lib/cache";
 
 /**
  * The catalogue's read layer.
@@ -72,6 +73,7 @@ const loadCatalog = unstable_cache(
           brandSlug: brands.slug,
           brandName: brands.name,
           brandIsAuthorisedPartner: brands.isAuthorisedPartner,
+          brandIsManufacturer: brands.isManufacturer,
           categorySlug: categories.slug,
           categoryName: categories.name,
           categorySummary: categories.summary,
@@ -124,6 +126,7 @@ const loadCatalog = unstable_cache(
             slug: row.brandSlug,
             name: row.brandName as string,
             isAuthorisedPartner: row.brandIsAuthorisedPartner as boolean,
+            isManufacturer: row.brandIsManufacturer as boolean,
           }
         : null,
       category: {
@@ -180,7 +183,7 @@ const loadCatalog = unstable_cache(
     return { items, categories: roots };
   },
   [CATALOG_CACHE_TAG],
-  { tags: [CATALOG_CACHE_TAG] },
+  { tags: [CATALOG_CACHE_TAG], revalidate: CACHE_TTL_SECONDS },
 );
 
 /** Deduped per render, cached across renders and revalidated by tag in Sprint 4. */
@@ -282,7 +285,7 @@ const searchSlugs = unstable_cache(
     return rows.map((row) => row.slug);
   },
   ["catalog-search"],
-  { tags: [CATALOG_CACHE_TAG] },
+  { tags: [CATALOG_CACHE_TAG], revalidate: CACHE_TTL_SECONDS },
 );
 
 function inBand(price: number, band: PriceBandKey): boolean {
@@ -340,10 +343,17 @@ export async function listItems(filters: CatalogFilters = {}): Promise<ListItems
   };
 }
 
-export function brandFacets(items: CatalogItem[]): Facet[] {
+export function brandFacets(
+  items: CatalogItem[],
+  options: { manufacturersOnly?: boolean } = {},
+): Facet[] {
   const counts = new Map<string, Facet>();
   for (const item of items) {
     if (!item.brand) continue;
+    // The "Unbranded / OEM" catch-all is a real filter on the catalogue — you do
+    // want to narrow to the cable and connectors — but it is not something that
+    // deserves a price-list page of its own.
+    if (options.manufacturersOnly && !item.brand.isManufacturer) continue;
     const existing = counts.get(item.brand.slug);
     if (existing) existing.count += 1;
     else counts.set(item.brand.slug, { key: item.brand.slug, label: item.brand.name, count: 1 });

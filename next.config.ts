@@ -10,6 +10,21 @@ const nextConfig: NextConfig = {
    * for a slow connection rather than for slow work.
    */
   staticPageGenerationTimeout: 120,
+
+  images: {
+    /**
+     * Photographs uploaded through the admin live in Supabase Storage, so
+     * next/image has to be told that host is allowed to serve them. Narrowed to
+     * the media bucket's path rather than the whole project.
+     */
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+        pathname: "/storage/v1/object/public/media/**",
+      },
+    ],
+  },
 };
 
 export default nextConfig;

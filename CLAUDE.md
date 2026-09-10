@@ -126,6 +126,7 @@ docs/                   the documents listed below
 | `docs/08-claude-code-prompts.md` | The kickoff prompt for each sprint |
 | `docs/09-open-items.md` | **Outstanding items from the owner. Check at the start and end of every session.** |
 | `docs/10-content-calendar.md` | Every article, its target query, and its publish date |
+| `docs/11-launch-checklist.md` | Launch state: what is done in the code, what needs the owner, and the view-source price evidence |
 
 ## 9. Facts about the business (use these, do not invent)
 

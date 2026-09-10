@@ -17,6 +17,8 @@ export type CatalogBrand = {
   slug: string;
   name: string;
   isAuthorisedPartner: boolean;
+  /** False for the "Unbranded / OEM" catch-all; gates /price-list/[brand]. */
+  isManufacturer: boolean;
 };
 
 export type CatalogCategory = {

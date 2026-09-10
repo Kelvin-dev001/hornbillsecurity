@@ -18,6 +18,7 @@
  */
 import { expandBom, type BomItem, type BomService } from "../../lib/pricing/bom";
 import { cctvLineSpecs, selectEquipment, type CctvAnswers } from "../../lib/pricing/cctv";
+import { PRICE_BANDS } from "../../lib/catalog/types";
 import type { connect } from "./db";
 
 /**
@@ -259,4 +260,60 @@ export async function readRenderableAmounts(sql: ReturnType<typeof connect>): Pr
   }
 
   return amounts;
+}
+
+/**
+ * Numbers the catalogue prints for reasons that have nothing to do with price.
+ *
+ * The leak scan matches a cost that stands alone as a token anywhere on a page,
+ * which is what it takes to catch a cost interpolated into a sentence. The cost
+ * of that reach is that the catalogue's own copy is full of standalone numbers:
+ * "2MP / 2.8mm / 350 deg pan / 75 deg tilt" contains 350, which is also the
+ * distributor cost of a DC connector pack, and the price-band facet is labelled
+ * "5,000 – 15,000", where 15,000 is a camera's cost.
+ *
+ * Neither is a leak and neither is distinguishable from one by looking at the
+ * page, so both are removed from the forbidden set rather than special-cased in
+ * the regex — a lookahead listing "deg", "mm" and "MP" would be a list that goes
+ * stale the first time somebody writes a spec in a new unit, and it would hide a
+ * genuine leak that happened to be followed by one of those words.
+ *
+ * Deliberately narrow. It reads item, service and category metadata — the fields
+ * that carry specifications — and the price-band boundaries. It does **not**
+ * read article bodies or any other owner-edited prose: those change without a
+ * code review, and letting them subtract from the forbidden set would let the
+ * scan be weakened by an edit in the admin portal.
+ */
+export async function readAmbiguousNumbers(
+  sql: ReturnType<typeof connect>,
+): Promise<Set<number>> {
+  const [itemRows, serviceRows, categoryRows] = await Promise.all([
+    sql<{ text: string }[]>`
+      select concat_ws(' ', name, short_description, description, specs::text,
+                       array_to_string(use_cases, ' ')) as text
+      from public_items`,
+    sql<{ text: string }[]>`
+      select concat_ws(' ', name, description, array_to_string(inclusions, ' ')) as text
+      from services where published`,
+    sql<{ text: string }[]>`
+      select concat_ws(' ', name, summary) as text from categories where published`,
+  ]);
+
+  const ambiguous = new Set<number>();
+
+  for (const row of [...itemRows, ...serviceRows, ...categoryRows]) {
+    // Every integer in the text, with thousands separators honoured, so both
+    // "15000" and "15,000" reduce to the same value.
+    for (const match of row.text.matchAll(/\d[\d,]*/g)) {
+      const value = Number(match[0].replace(/,/g, ""));
+      if (Number.isFinite(value)) ambiguous.add(value);
+    }
+  }
+
+  for (const band of PRICE_BANDS) {
+    ambiguous.add(band.min);
+    ambiguous.add(band.max);
+  }
+
+  return ambiguous;
 }

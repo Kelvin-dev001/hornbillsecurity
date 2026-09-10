@@ -27,9 +27,22 @@ const STATIC_ROUTES = [
   "/",
   "/robots.txt",
   "/sitemap.xml",
+  "/llms.txt",
   "/this-route-does-not-exist",
   "/solutions",
   "/build",
+  // Sprint 4. /price-list is the largest single price surface on the site and
+  // /services is the only page that renders the services table, so both are
+  // scanned even though neither reads an item row directly.
+  "/price-list",
+  "/services",
+  "/services/cctv-installation",
+  "/locations",
+  "/about",
+  "/contact",
+  "/faq",
+  "/projects",
+  "/blog",
   // Empty, since the scan has no basket — but it still renders the layout and
   // its props payload, so the private-column-name check applies. The priced
   // version of this page is covered by tests/quote-e2e.test.ts.
@@ -46,12 +59,28 @@ const STATIC_ROUTES = [
 const BUILDER_ROUTES = BUILDER_VARIANTS.map((variant) => `/build/cctv${variant.query}`);
 
 export async function readPublicRoutes(sql: ReturnType<typeof connect>): Promise<string[]> {
-  const [categories, items, solutions] = await Promise.all([
+  const [categories, items, solutions, locations, posts, projects, brands] = await Promise.all([
     sql<{ slug: string }[]>`select slug from categories where published order by slug`,
     sql<{ slug: string }[]>`
       select slug from items where published and effective_price is not null order by slug
     `,
     sql<{ slug: string }[]>`select slug from solutions where published order by slug`,
+    sql<{ slug: string }[]>`select slug from locations where published order by slug`,
+    sql<{ slug: string }[]>`
+      select slug from posts where published and published_at is not null order by slug
+    `,
+    sql<{ slug: string }[]>`select slug from projects where published order by slug`,
+    // The same rule /price-list/[brand] generates on: a real manufacturer with
+    // at least three published, priced models.
+    sql<{ slug: string }[]>`
+      select b.slug
+      from brands b
+      join items i on i.brand_id = b.id and i.published and i.effective_price is not null
+      where b.is_manufacturer
+      group by b.slug
+      having count(*) >= 3
+      order by b.slug
+    `,
   ]);
 
   return [
@@ -61,5 +90,12 @@ export async function readPublicRoutes(sql: ReturnType<typeof connect>): Promise
     ...solutions.map((s) => `/solutions/${s.slug}`),
     ...categories.map((c) => `/catalog/${c.slug}`),
     ...items.map((i) => `/catalog/item/${i.slug}`),
+    ...locations.flatMap((l) => [
+      `/services/cctv-installation/${l.slug}`,
+      `/locations/${l.slug}`,
+    ]),
+    ...brands.map((b) => `/price-list/${b.slug}`),
+    ...posts.map((p) => `/blog/${p.slug}`),
+    ...projects.map((p) => `/projects/${p.slug}`),
   ];
 }

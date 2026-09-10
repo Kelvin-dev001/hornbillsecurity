@@ -273,3 +273,199 @@ export function solutionJsonLd(options: {
     },
   };
 }
+
+/**
+ * Article — docs/03 §3 wants honest datePublished and dateModified.
+ *
+ * "Honest" is doing work there: publishedAt is stamped once, the first time an
+ * article goes live, and never moved again, so an edit does not make a
+ * two-year-old guide claim to be new.
+ */
+export function articleJsonLd(options: {
+  post: {
+    slug: string;
+    title: string;
+    excerpt: string;
+    author: string;
+    coverImageUrl: string | null;
+    publishedAt: string | null;
+    updatedAt: string;
+  };
+  settings: SiteSettings;
+}) {
+  const { post, settings } = options;
+  const url = absoluteUrl(`/blog/${post.slug}`);
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "@id": `${url}#article`,
+    headline: post.title,
+    description: post.excerpt,
+    url,
+    ...(post.coverImageUrl ? { image: post.coverImageUrl } : {}),
+    ...(post.publishedAt ? { datePublished: post.publishedAt } : {}),
+    dateModified: post.updatedAt,
+    author: { "@type": "Organization", name: post.author || settings.tradingName },
+    publisher: {
+      "@type": "Organization",
+      name: settings.tradingName,
+      "@id": absoluteUrl("/#business"),
+    },
+    mainEntityOfPage: { "@type": "WebPage", "@id": url },
+  };
+}
+
+/**
+ * FAQPage.
+ *
+ * docs/03 §3 asks for it on the cost pages, and docs/03 §0 explains why those
+ * in particular: AI Overviews appear on roughly 80% of cost and pricing queries,
+ * and this is the shape they lift an answer out of.
+ */
+export function faqJsonLd(entries: { question: string; answer: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: entries.map((entry) => ({
+      "@type": "Question",
+      name: entry.question,
+      acceptedAnswer: { "@type": "Answer", text: entry.answer },
+    })),
+  };
+}
+
+/**
+ * A location, as a service area rather than a second business.
+ *
+ * docs/03 §3 wants LocalBusiness with areaServed on the location pages. It
+ * points at the one business @id rather than declaring a new one per town —
+ * eleven LocalBusiness entities for one company in Mombasa is exactly the kind
+ * of thing that gets an entity ignored.
+ */
+export function serviceAreaJsonLd(options: {
+  location: { slug: string; name: string; county: string; intro: string; lat: number | null; lng: number | null };
+  settings: SiteSettings;
+  servicePath: string;
+  serviceName: string;
+}) {
+  const { location, settings, servicePath, serviceName } = options;
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    name: `${serviceName} in ${location.name}`,
+    description: location.intro,
+    url: absoluteUrl(servicePath),
+    serviceType: serviceName,
+    provider: {
+      "@type": "HomeAndConstructionBusiness",
+      "@id": absoluteUrl("/#business"),
+      name: settings.tradingName,
+      telephone: `+254${settings.phone.replace(/^0/, "")}`,
+    },
+    areaServed: {
+      "@type": "Place",
+      name: `${location.name}, ${location.county} County, Kenya`,
+      ...(location.lat !== null && location.lng !== null
+        ? { geo: { "@type": "GeoCoordinates", latitude: location.lat, longitude: location.lng } }
+        : {}),
+    },
+  };
+}
+
+/**
+ * Service + Offer with a real price — docs/03 §3.
+ *
+ * "Almost nobody in Kenya emits a valid Offer with a real price for an
+ * *installation service*, because almost nobody publishes one. That is free
+ * distinctiveness."
+ *
+ * Same VAT handling as productJsonLd: schema.org has no excluding-tax flag on
+ * `price`, so the PriceSpecification carries valueAddedTaxIncluded: false.
+ * Without it a crawler reads our figures as VAT-inclusive and we look 16%
+ * cheaper than we are.
+ */
+export function serviceJsonLd(options: {
+  name: string;
+  description: string;
+  path: string;
+  settings: SiteSettings;
+  areaServed?: { name: string; county: string }[];
+  offers: { name: string; price: number; url: string; unit?: string }[];
+}) {
+  const { name, description, path, settings, areaServed, offers } = options;
+  const url = absoluteUrl(path);
+
+  const reviewed = settings.pricesUpdatedAt;
+  const validUntil = new Date(
+    Date.UTC(reviewed.getUTCFullYear(), reviewed.getUTCMonth() + 2, 0),
+  )
+    .toISOString()
+    .slice(0, 10);
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "@id": `${url}#service`,
+    name,
+    description,
+    url,
+    serviceType: name,
+    provider: {
+      "@type": "HomeAndConstructionBusiness",
+      "@id": absoluteUrl("/#business"),
+      name: settings.tradingName,
+      telephone: `+254${settings.phone.replace(/^0/, "")}`,
+    },
+    areaServed: (areaServed ?? settings.serviceCounties.map((county) => ({ name: county, county })))
+      .map((area) => ({
+        "@type": "Place",
+        name: area.name === area.county ? `${area.county} County, Kenya` : `${area.name}, ${area.county} County, Kenya`,
+      })),
+    offers: offers.map((offer) => ({
+      "@type": "Offer",
+      name: offer.name,
+      url: absoluteUrl(offer.url),
+      price: offer.price,
+      priceCurrency: "KES",
+      priceValidUntil: validUntil,
+      availability: "https://schema.org/InStock",
+      ...(offer.unit ? { eligibleQuantity: { "@type": "QuantitativeValue", unitText: offer.unit } } : {}),
+      priceSpecification: {
+        "@type": "PriceSpecification",
+        price: offer.price,
+        priceCurrency: "KES",
+        valueAddedTaxIncluded: false,
+      },
+      seller: { "@id": absoluteUrl("/#business") },
+    })),
+  };
+}
+
+/**
+ * WebSite with a SearchAction — docs/03 §3, home page.
+ *
+ * The target is the real catalogue search, so a sitelinks search box (if one is
+ * ever granted) lands somewhere that works rather than on a query string the
+ * app ignores.
+ */
+export function websiteJsonLd(settings: SiteSettings) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "@id": absoluteUrl("/#website"),
+    name: settings.tradingName,
+    url: absoluteUrl("/"),
+    inLanguage: "en-KE",
+    publisher: { "@id": absoluteUrl("/#business") },
+    potentialAction: {
+      "@type": "SearchAction",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: `${absoluteUrl("/catalog")}?q={search_term_string}`,
+      },
+      "query-input": "required name=search_term_string",
+    },
+  };
+}

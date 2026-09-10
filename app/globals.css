@@ -236,3 +236,106 @@
 @utility brand-gradient {
   background-image: var(--brand-gradient);
 }
+
+/*
+ * Article bodies.
+ *
+ * Written rather than pulled from a typography plugin, because the scale, the
+ * line height and the colours are already settled in docs/04 and a plugin would
+ * bring its own opinions about all three. This is one utility class and about
+ * forty lines, against a dependency and a config file.
+ */
+@utility prose-hornbill {
+  max-width: var(--container-prose);
+  color: var(--muted);
+  font-size: 1.0625rem;
+  line-height: 1.7;
+
+  & > * + * {
+    margin-top: 1.25em;
+  }
+
+  & h2 {
+    margin-top: 2.5rem;
+    color: var(--ink);
+    font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  & h3 {
+    margin-top: 2rem;
+    color: var(--ink);
+    font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+  }
+
+  & strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  & a {
+    color: var(--action);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  & ul,
+  & ol {
+    padding-left: 1.5rem;
+  }
+
+  & ul {
+    list-style: disc;
+  }
+
+  & ol {
+    list-style: decimal;
+  }
+
+  & li + li {
+    margin-top: 0.4em;
+  }
+
+  & blockquote {
+    border-left: 3px solid var(--brand-orange);
+    padding-left: 1rem;
+    color: var(--ink);
+    font-style: normal;
+  }
+
+  /* docs/04: tabular numerals are mandatory wherever prices appear, and an
+     article about what things cost is full of them. */
+  & table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+  }
+
+  & th,
+  & td {
+    border-bottom: 1px solid var(--line);
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+  }
+
+  & th {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  & code {
+    background: var(--paper-warm);
+    border-radius: 4px;
+    padding: 0.1em 0.35em;
+    font-size: 0.9em;
+  }
+
+  & img {
+    border-radius: var(--radius-card);
+  }
+}

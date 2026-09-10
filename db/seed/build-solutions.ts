@@ -14,7 +14,13 @@
 import { eq } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
-import { expandBom, type BomItem, type BomLineInput, type BomService } from "../../lib/pricing/bom";
+import {
+  expandBom,
+  type Bom,
+  type BomItem,
+  type BomLineInput,
+  type BomService,
+} from "../../lib/pricing/bom";
 import { cctvLineSpecs, selectEquipment } from "../../lib/pricing/cctv";
 import { services, solutionLines, solutions, type ItemUnit, type NewSolutionLine } from "../schema";
 import { solutionSeed } from "./solutions";
@@ -55,7 +61,7 @@ export async function buildSolutions(
     rules: Map<string, number>;
     vatRate: number;
   },
-): Promise<{ solutions: number; lines: number }> {
+): Promise<{ solutions: number; lines: number; boms: Map<string, Bom> }> {
   const { categoryIdBySlug, itemsBySku, rules, vatRate } = context;
 
   const cctvCategoryId = categoryIdBySlug.get("cctv");
@@ -90,6 +96,9 @@ export async function buildSolutions(
   );
 
   let totalLines = 0;
+  // Handed back so db/seed/posts.ts can write the launch articles from the same
+  // numbers the package pages render, rather than from figures typed into prose.
+  const boms = new Map<string, Bom>();
 
   for (const [index, seed] of solutionSeed.entries()) {
     const selection = selectEquipment(seed.answers, {
@@ -210,7 +219,8 @@ export async function buildSolutions(
 
     await db.insert(solutionLines).values(rows);
     totalLines += rows.length;
+    boms.set(seed.slug, bom);
   }
 
-  return { solutions: solutionSeed.length, lines: totalLines };
+  return { solutions: solutionSeed.length, lines: totalLines, boms };
 }

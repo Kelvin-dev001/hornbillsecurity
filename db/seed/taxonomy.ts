@@ -293,6 +293,12 @@ export type BrandSeed = {
   slug: string;
   name: string;
   sortOrder: number;
+  /**
+   * False only for the "Unbranded / OEM" catch-all. It gates
+   * /price-list/[brand]: `hikvision price list kenya` is a real query worth a
+   * page, "Unbranded / OEM price list" is not.
+   */
+  isManufacturer?: boolean;
 };
 
 /**
@@ -311,7 +317,7 @@ export const brandSeed: BrandSeed[] = [
   { slug: "ezviz", name: "EZVIZ", sortOrder: 40 },
   { slug: "uniview", name: "Uniview", sortOrder: 50 },
   { slug: "tenda", name: "Tenda", sortOrder: 60 },
-  { slug: "generic", name: "Unbranded / OEM", sortOrder: 90 },
+  { slug: "generic", name: "Unbranded / OEM", sortOrder: 90, isManufacturer: false },
 ];
 
 /** docs/07 `brand` → brand slug. "Service" rows carry no brand at all. */
