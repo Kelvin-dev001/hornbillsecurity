@@ -31,6 +31,7 @@ export const footerNav: { heading: string; items: NavItem[] }[] = [
       { href: "/catalog", label: "Equipment catalogue", sprint: 1 },
       { href: "/price-list", label: "Full price list", sprint: 4 },
       { href: "/quote", label: "Your quote", sprint: 3 },
+      { href: "/tools", label: "Calculators", sprint: 7 },
     ],
   },
   {
@@ -49,6 +50,7 @@ export const footerNav: { heading: string; items: NavItem[] }[] = [
       { href: "/contact", label: "Contact", sprint: 4 },
       { href: "/blog", label: "Guides and costs", sprint: 4 },
       { href: "/faq", label: "FAQ", sprint: 4 },
+      { href: "/cctv-and-the-law-in-kenya", label: "CCTV and the law", sprint: 7 },
     ],
   },
 ];

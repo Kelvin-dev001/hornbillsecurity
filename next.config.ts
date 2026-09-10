@@ -21,6 +21,12 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       { source: "/services/cctv", destination: "/services/cctv-installation", permanent: true },
+      // docs/03 §2 lists /tools/cctv-cost-calculator, and §4 notes that "cctv
+      // installation cost calculator" is a verified Kenyan query with no Kenyan
+      // answer. The calculator itself is /build/cctv, so the URL exists and
+      // points at it — a second page saying the same thing would put two of our
+      // own pages in front of one query and split the ranking signal.
+      { source: "/tools/cctv-cost-calculator", destination: "/build/cctv", permanent: true },
     ];
   },
 

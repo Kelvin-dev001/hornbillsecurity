@@ -147,6 +147,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "yearly",
       priority: 0.7,
     },
+    // Sprint 7. The law page is the highest-authority asset on the site
+    // (docs/03 §4 item 29), so it sits with the commercial pages rather than
+    // with the ancillary ones.
+    {
+      url: absoluteUrl("/cctv-and-the-law-in-kenya"),
+      lastModified: settings.updatedAt,
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
+    {
+      url: absoluteUrl("/tools"),
+      lastModified: settings.updatedAt,
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    {
+      url: absoluteUrl("/tools/storage-calculator"),
+      lastModified: catalogLastModified,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
     {
       url: absoluteUrl("/faq"),
       lastModified: settings.updatedAt,

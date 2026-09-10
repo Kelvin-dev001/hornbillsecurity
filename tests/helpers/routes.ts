@@ -43,6 +43,14 @@ const STATIC_ROUTES = [
   "/faq",
   "/projects",
   "/blog",
+  // Sprint 7. The storage calculator renders drive prices, so it belongs in the
+  // scan; its parameterised variants take a different code path from the bare
+  // URL and are scanned separately below.
+  "/cctv-and-the-law-in-kenya",
+  "/tools",
+  "/tools/storage-calculator",
+  "/tools/storage-calculator?cameras=32&mp=8&days=90",
+  "/tools/storage-calculator?cameras=4&mp=2&days=7",
   // Empty, since the scan has no basket — but it still renders the layout and
   // its props payload, so the private-column-name check applies. The priced
   // version of this page is covered by tests/quote-e2e.test.ts.
