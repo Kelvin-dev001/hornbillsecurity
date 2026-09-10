@@ -183,6 +183,17 @@ export default async function SettingsPage({
             <Field label="Facebook" name="facebookUrl">
               <TextInput name="facebookUrl" defaultValue={settings.facebookUrl ?? ""} />
             </Field>
+            <Field
+              label="Google review link"
+              name="googleReviewUrl"
+              hint="The “write a review” short link from the Mombasa Business Profile. It goes into the review request on every won job, and a request without it is one nobody acts on."
+            >
+              <TextInput
+                name="googleReviewUrl"
+                defaultValue={settings.googleReviewUrl ?? ""}
+                placeholder="https://g.page/r/…/review"
+              />
+            </Field>
             <Field label="Instagram" name="instagramUrl">
               <TextInput name="instagramUrl" defaultValue={settings.instagramUrl ?? ""} />
             </Field>

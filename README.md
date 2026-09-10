@@ -115,6 +115,9 @@ app/
   blog/               the guides
   projects/           case studies
   admin/              the portal, auth-gated and noindex
+                      items · prices · leads · articles · case studies ·
+                      areas · testimonials · FAQs · packages · services ·
+                      quantity rules · images · business details
   api/                quote summary, CSV export
   layout.tsx          fonts, header, footer, WhatsApp FAB
   robots.ts sitemap.ts llms.txt/
@@ -125,7 +128,8 @@ components/
   layout/             header, footer
   ui/                 shadcn/ui
 lib/
-  admin/              auth, the price panel, CSV, bulk review, media
+  admin/              auth, the price panel, CSV, bulk review, media,
+                      content editors, the review-request builder
   cache.ts            the one TTL every cached reader shares — read the comment
   catalog/            the read layer — public_items only, plus the builder
   pricing/            effectivePrice(), the formula evaluator, BOM expansion
@@ -136,6 +140,8 @@ lib/
   site-settings.ts    getSiteSettings() and its formatters
 db/
   schema.ts migrations/ seed/
+scripts/
+  clear-read-cache.mjs  prebuild; read its header before removing it
 tests/                the cost-price leak scan and the pricing rule
 docs/                 the business, schema, SEO and design documents
 ```
@@ -153,11 +159,17 @@ touch that:
   back to `Date`.
 - **An entry with no `revalidate` never expires, and it is persisted to
   `.next/cache/fetch-cache`, which survives across builds and deployments.**
-  That once made a build serve five articles as 404 because an earlier build had
-  cached an empty list. `lib/cache.ts` now puts a ceiling on every entry, and
-  `npm run db:seed` clears the cache directory when it finishes. If content is
-  in the database and missing from the site, clear that directory before
-  doubting the query. `docs/11-launch-checklist.md` has the full story.
+  That twice made a build serve seeded articles as 404 while
+  `generateStaticParams` produced their slugs, because an earlier build had
+  cached an empty list and nothing had called `revalidateTag` — the change came
+  from a seed script, not the admin portal.
+
+  Three things now stand between you and that: `lib/cache.ts` puts a one-hour
+  ceiling on every entry, `npm run db:seed` clears the cache directory, and
+  `scripts/clear-read-cache.mjs` runs as `prebuild` so **no build trusts a cache
+  that can disagree with the database**. If content is in the database and
+  missing from the site, clear that directory before doubting the query.
+  `docs/11-launch-checklist.md` has both write-ups.
 
 ## Accessibility
 

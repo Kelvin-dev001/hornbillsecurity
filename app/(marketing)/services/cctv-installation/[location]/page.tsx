@@ -10,11 +10,7 @@ import { Button } from "@/components/ui/button";
 import { cheapestCompleteSystem, completeSystems, getSolutions } from "@/lib/catalog/solutions";
 import { getLocationBySlug, getLocations } from "@/lib/content/queries";
 import { formatKes } from "@/lib/money";
-import {
-  breadcrumbJsonLd,
-  jsonLdScriptProps,
-  serviceAreaJsonLd,
-} from "@/lib/seo/json-ld";
+import { breadcrumbJsonLd, jsonLdScriptProps, serviceJsonLd } from "@/lib/seo/json-ld";
 import { absoluteUrl } from "@/lib/seo/origin";
 import { formatPhoneForDisplay, getSiteSettings, telLink, whatsappLink } from "@/lib/site-settings";
 
@@ -95,13 +91,33 @@ export default async function LocationServicePage({
 
   return (
     <>
+      {/*
+        Service + Offer with real prices, not a bare Service. docs/03 §3:
+        "Almost nobody in Kenya emits a valid Offer with a real price for an
+        *installation service*, because almost nobody publishes one. That is
+        free distinctiveness." The offers are the three package totals actually
+        shown on the page, computed from live item prices.
+      */}
       <script
         {...jsonLdScriptProps(
-          serviceAreaJsonLd({
-            location,
+          serviceJsonLd({
+            name: `CCTV installation in ${location.name}`,
+            description: location.intro,
+            path: `/services/cctv-installation/${location.slug}`,
             settings,
-            servicePath: `/services/cctv-installation/${location.slug}`,
-            serviceName: "CCTV installation",
+            areaServed: [
+              {
+                name: location.name,
+                county: location.county,
+                lat: location.lat,
+                lng: location.lng,
+              },
+            ],
+            offers: featured.map((solution) => ({
+              name: solution.name,
+              price: solution.total,
+              url: `/solutions/${solution.slug}`,
+            })),
           }),
         )}
       />

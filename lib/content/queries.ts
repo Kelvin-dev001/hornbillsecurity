@@ -5,7 +5,7 @@ import { unstable_cache } from "next/cache";
 import { and, asc, desc, eq, isNotNull } from "drizzle-orm";
 
 import { db } from "@/db";
-import { faqs, locations, posts, projects, testimonials } from "@/db/schema";
+import { faqs, locations, posts, projects, solutions, testimonials } from "@/db/schema";
 import { CACHE_TTL_SECONDS } from "@/lib/cache";
 
 /**
@@ -120,14 +120,25 @@ export const getLocationBySlug = cache(async (slug: string): Promise<LocationSum
 export type ProjectSummary = {
   slug: string;
   title: string;
+  /** Null unless written permission is recorded — docs/09 item 22. */
   clientName: string | null;
+  /** What the page says instead when the client cannot be named. */
+  sector: string | null;
   summary: string;
   challenge: string | null;
+  siteConditions: string | null;
   solution: string | null;
   outcome: string | null;
   images: string[];
   locationSlug: string | null;
   locationName: string | null;
+  /**
+   * The package this job was based on, if any. The case study renders its full
+   * priced bill of materials — "we installed eight cameras" is a claim, and the
+   * same sentence with the itemised bill under it is evidence.
+   */
+  solutionSlug: string | null;
+  solutionName: string | null;
   completedAt: string | null;
   updatedAt: string;
 };
@@ -140,8 +151,10 @@ const loadProjects = unstable_cache(
         title: projects.title,
         clientName: projects.clientName,
         clientNamedOk: projects.clientNamedOk,
+        sector: projects.sector,
         summary: projects.summary,
         challenge: projects.challenge,
+        siteConditions: projects.siteConditions,
         solution: projects.solution,
         outcome: projects.outcome,
         images: projects.images,
@@ -149,9 +162,12 @@ const loadProjects = unstable_cache(
         updatedAt: projects.updatedAt,
         locationSlug: locations.slug,
         locationName: locations.name,
+        solutionSlug: solutions.slug,
+        solutionName: solutions.name,
       })
       .from(projects)
       .leftJoin(locations, eq(projects.locationId, locations.id))
+      .leftJoin(solutions, eq(projects.solutionId, solutions.id))
       .where(eq(projects.published, true))
       .orderBy(asc(projects.sortOrder));
 
@@ -160,14 +176,18 @@ const loadProjects = unstable_cache(
       // A client is named only where written permission is recorded. Anything
       // else shows the sector instead (docs/09 item 22).
       clientName: row.clientNamedOk ? row.clientName : null,
+      sector: row.sector,
       title: row.title,
       summary: row.summary,
       challenge: row.challenge,
+      siteConditions: row.siteConditions,
       solution: row.solution,
       outcome: row.outcome,
       images: row.images,
       locationSlug: row.locationSlug,
       locationName: row.locationName,
+      solutionSlug: row.solutionSlug,
+      solutionName: row.solutionName,
       completedAt: row.completedAt?.toISOString() ?? null,
       updatedAt: row.updatedAt.toISOString(),
     }));

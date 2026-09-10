@@ -7,7 +7,7 @@ import { PriceStamp } from "@/components/price-stamp";
 import { Button } from "@/components/ui/button";
 import { getServicesByCategory, serviceUnitPhrase } from "@/lib/catalog/services";
 import { formatKes } from "@/lib/money";
-import { breadcrumbJsonLd, jsonLdScriptProps } from "@/lib/seo/json-ld";
+import { breadcrumbJsonLd, jsonLdScriptProps, offerListJsonLd } from "@/lib/seo/json-ld";
 import { absoluteUrl } from "@/lib/seo/origin";
 import { getSiteSettings, whatsappLink } from "@/lib/site-settings";
 
@@ -41,6 +41,30 @@ export default async function ServicesPage() {
   return (
     <>
       <script {...jsonLdScriptProps(breadcrumbJsonLd(trail))} />
+      {/*
+        The published rate card, machine-readable. docs/03 §4 Tier 3 item 21:
+        "What CCTV Installation Labour Actually Costs — every competitor hides
+        this." Unpriced rows are left out rather than emitted at zero.
+      */}
+      <script
+        {...jsonLdScriptProps(
+          offerListJsonLd({
+            name: `Security services and labour rates, ${settings.serviceAreaLabel}`,
+            path: "/services",
+            settings,
+            offers: groups
+              .flatMap((group) => group.services)
+              .filter((service) => service.price !== null)
+              .map((service) => ({
+                name: service.name,
+                description: service.description,
+                price: service.price as number,
+                url: "/services",
+                unit: serviceUnitPhrase(service.pricingUnit),
+              })),
+          }),
+        )}
+      />
 
       <div className="mx-auto max-w-(--container-page) px-4 py-8 sm:px-6 sm:py-12">
         <Breadcrumbs trail={trail} />

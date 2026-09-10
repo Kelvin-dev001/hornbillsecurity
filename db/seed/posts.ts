@@ -25,6 +25,16 @@
  *   Tier 4 #28  Analog vs IP on a Real 8-Camera Job
  *   Tier 5 #30  How to Read a CCTV Quotation in Kenya
  *
+ * Sprint 5 adds the two Tier 2 pieces the coast strategy turns on:
+ *
+ *   Tier 2 #6   CCTV Installation in Mombasa: Prices, Coverage
+ *   Tier 2 #14  Securing a Holiday Home or Airbnb on the South Coast
+ *
+ * Tier 2 items 7-12 are the six neighbourhood pages, and those are already live
+ * as /services/cctv-installation/[location] with real local copy. Writing them a
+ * second time as articles would put two of our own pages in front of the same
+ * query, which splits the ranking signal we are trying to concentrate.
+ *
  * Tier 1 #2 (the interactive calculator) shipped as /build/cctv and Tier 1 #5
  * (the Hikvision price list) as /price-list/hikvision, so neither needs an
  * article to exist.
@@ -106,6 +116,9 @@ export function buildPosts(context: PostSeedContext): NewPost[] {
   const sixteen = requireBom(context, "commercial-16-camera-cctv");
   const eightIp = requireBom(context, "business-ip-8-camera-colorvu-cctv");
   const coast = requireBom(context, "coast-spec-4-camera-cctv");
+  const holiday = requireBom(context, "holiday-home-airbnb-cctv");
+  const solar = requireBom(context, "wire-free-solar-4g-camera");
+  const shop = requireBom(context, "shop-duka-4-camera-cctv");
 
   const labourPoint = rate(context, "camera-installation-point");
   const dataPoint = rate(context, "data-point-installation");
@@ -532,6 +545,179 @@ That is uncomfortable for us on the days we are the more expensive quote. It is 
         {
           question: "Should I pay a deposit before installation?",
           answer: `A deposit is normal — we ask for ${context.depositPercent}% before work begins, with the balance on completion. What is not normal is paying in full up front. If someone asks for the whole amount before any equipment is on site, that is worth pausing over.`,
+        },
+      ],
+    },
+
+    // == Tier 2 - 6: the coast land-grab, head-on ==============================
+    {
+      slug: "cctv-installation-mombasa-prices-coverage",
+      title: `CCTV Installation in Mombasa ${publishedAt.getUTCFullYear()}: Prices, Coverage and What to Expect`,
+      category: "Coast",
+      author: "Hornbill Smart Security Services",
+      excerpt: `What a CCTV system costs in Mombasa, itemised: ${kes(four.subtotal)} for four cameras at a home, ${kes(shop.subtotal)} for a shop, ${kes(eight.subtotal)} for eight at a business. Every area we cover, and what changes between them.`,
+      seoTitle: `CCTV Installation Mombasa: Prices from ${kes(four.subtotal)} - ${publishedAt.getUTCFullYear()}`,
+      seoDescription: `Itemised CCTV prices for Mombasa: ${kes(four.subtotal)} residential, ${kes(shop.subtotal)} retail, ${kes(eight.subtotal)} commercial, VAT-exclusive. Island, Nyali, Bamburi, Mtwapa, Likoni and the south coast.`,
+      tags: ["mombasa", "pricing", "cctv", "coast"],
+      body: `If you are getting CCTV quotes in Mombasa, here is what the work actually costs, what changes between neighbourhoods, and the questions worth asking whoever you end up using.
+
+Prices are Kenyan Shillings, exclusive of VAT at ${context.vatRate}%, as at ${stamp}.
+
+## What it costs
+
+| System | Cameras | Total ex VAT | Full itemised bill |
+|---|---:|---:|---|
+| Residential | 4 | ${kes(four.subtotal)} | [Home Colour 4](/solutions/home-colour-4-camera-colorvu-cctv) |
+| Shop or duka | 4 | ${kes(shop.subtotal)} | [Shop / Duka 4](/solutions/shop-duka-4-camera-cctv) |
+| Small business | 8 | ${kes(eight.subtotal)} | [Business 8](/solutions/business-8-camera-colorvu-cctv) |
+| Warehouse or yard | 16 | ${kes(sixteen.subtotal)} | [Commercial 16](/solutions/commercial-16-camera-cctv) |
+| Coast specification | 4 | ${kes(coast.subtotal)} | [Coast-Spec CCTV](/solutions/coast-spec-4-camera-cctv) |
+
+Every one of those links opens the complete bill of materials - the cameras with their part numbers, the recorder, the drive, the metres of cable, the connectors, the trunking and the labour, each with a price on it. Nobody else in this market publishes that, and the reason to is simple: it is the only way you can tell two quotes apart.
+
+The whole [price list](/price-list) is public too, if you would rather check our figures item by item.
+
+## Why the coast specification costs more
+
+${kes(coast.subtotal - four.subtotal)} more than the standard four-camera build, and it is not a premium for its own sake.
+
+Salt gets into everything here, and it does not attack the cameras - those are IP66 as standard from any serious brand. It attacks the connections. An unsealed junction box on a wall facing the water shows green corrosion within a season and an intermittent fault within two. So the coast build fits sealed IP66 boxes and stainless fixings as standard rather than as an upgrade, and the connections are made inside the box instead of in free air.
+
+That is [written up in full here](/blog/cctv-kenyan-coast-salt-air-humidity-what-survives), including how far inland it matters - further than most people assume, because the sea breeze carries salt well past the point where you can still see the water.
+
+## What changes by area
+
+The island, Nyali, Bamburi, Mtwapa, Likoni, Diani, Kilifi and Malindi are genuinely different jobs, and any installer who quotes them identically has not thought about it:
+
+- **[Mombasa Island](/services/cctv-installation/mombasa-island)** - older, often shared buildings, so cable routes cross space that belongs to somebody else. Getting that agreed before the day is half the job.
+- **[Nyali](/services/cctv-installation/nyali)** - compounds with grounds. A camera aimed through a bougainvillea is a camera aimed at a bougainvillea in six months, so positions are set with a year of growth in mind.
+- **[Bamburi and Shanzu](/services/cctv-installation/bamburi-shanzu)** - apartment blocks and hospitality. One recorder, access split between a caretaker and a committee. That is a configuration question, not a hardware one.
+- **[Mtwapa](/services/cctv-installation/mtwapa)** - runs late, under mixed artificial light, which is exactly where ordinary infrared washes out and colour-at-night earns its money.
+- **[Likoni and the south coast](/services/cctv-installation/likoni-south-coast)** - the ferry. A return trip can lose an afternoon to the queue, so the survey has to be thorough enough that the job is done in one visit.
+- **[Diani and Ukunda](/services/cctv-installation/diani-ukunda)** - houses standing empty for months, owners abroad, a caretaker on site. Access has to be split, and mains power is not dependable enough to assume.
+
+## Five questions worth asking any Mombasa installer
+
+1. **What is the exact model number of every camera?** "4 x HD outdoor camera" spans a factor of five in price and an enormous difference in what you can actually see at night.
+2. **What is the labour charge, per camera point?** Ours is ${kes(labourPoint)} and [we publish the whole rate card](/services). If a quote has no labour line, it is hidden inside the equipment prices.
+3. **How many days of recording will that drive hold, at this resolution, on this many cameras?** Get it in writing. A 1TB drive on eight 5MP cameras is a week, not a month.
+4. **Is it a surveillance-rated drive?** A desktop drive in a recorder fails, usually inside two years and usually silently.
+5. **What junction box are you fitting?** On this coast, if the answer is not a sealed IP-rated box, you have just found where the system will fail.
+
+There is a longer version of that list - [nine ways installers overcharge](/blog/how-to-read-a-cctv-quotation-kenya) - with the question that exposes each one.
+
+## How we work
+
+A survey first, ${kes(context.siteSurveyFee)}, credited against your invoice, with a written findings report and camera positions marked up that is yours whether or not you use us. Then a quotation with every line priced, valid ${context.quoteValidityDays} days. ${context.depositPercent}% deposit to start. ${context.warrantyMonths} months on workmanship.
+
+Or skip all of that for now and [build the system yourself](/build/cctv) - six questions, and you get the same itemised bill we would send you.`,
+      faq: [
+        {
+          question: "How much does CCTV installation cost in Mombasa?",
+          answer: `As at ${stamp}: ${kes(four.subtotal)} for a complete four-camera residential system, ${kes(shop.subtotal)} for a shop, ${kes(eight.subtotal)} for eight cameras at a business, all excluding VAT and all including cameras, recorder, drive, cabling, connectors, trunking and labour. The coast specification, with sealed junction boxes and stainless fixings throughout, is ${kes(coast.subtotal)} for four cameras.`,
+        },
+        {
+          question: "Do you charge extra to come to Mtwapa, Diani or Kilifi?",
+          answer:
+            "Not as a callout fee. Distance affects how we plan a job rather than what we charge for it - Malindi and Watamu are quoted as a planned visit with everything on the vehicle rather than as a callout, which is cheaper for you. If travel does change a price we say so before you commit, not at the invoice.",
+        },
+        {
+          question: "How long does a Mombasa installation take?",
+          answer:
+            "A four-camera residential job is normally one day, eight cameras one to two. Older buildings on the island with no existing conduit take longer, and establishing that is the main thing the survey is for.",
+        },
+        {
+          question: "Which areas of Mombasa do you cover?",
+          answer:
+            "Mombasa Island, Nyali, Bamburi and Shanzu, Tudor and Kizingo, Likoni and the south coast approach, Mtwapa, Diani and Ukunda, Kilifi, Malindi and Watamu, and the Mariakani-Mazeras corridor. Each has its own page with what is actually different about installing there.",
+        },
+      ],
+    },
+
+    // == Tier 2 - 14: the highest-value work nobody is targeting ===============
+    {
+      slug: "securing-holiday-home-airbnb-south-coast",
+      title: "Securing a Holiday Home or Airbnb on the South Coast",
+      category: "Coast",
+      author: "Hornbill Smart Security Services",
+      excerpt: `A house that is empty for months is a different problem from one you live in. What to fit, what it costs - from ${kes(solar.subtotal)} for a single wire-free camera to ${kes(holiday.subtotal)} for a two-camera holiday-home setup - and how to give a caretaker access without giving them everything.`,
+      seoTitle: "Securing a Holiday Home or Airbnb on the South Coast: What to Fit and What It Costs",
+      seoDescription: `Diani, Galu and Watamu holiday homes: solar and 4G cameras from ${kes(solar.subtotal)}, a two-camera setup at ${kes(holiday.subtotal)}, and how to split access between an absent owner and a caretaker.`,
+      tags: ["diani", "holiday home", "airbnb", "solar", "coast"],
+      body: `Most of what we install between Diani and Watamu watches a house that nobody is in. That single fact changes the whole design, and it is why a system copied from a Nairobi suburb does not work here.
+
+Prices are VAT-exclusive, as at ${stamp}.
+
+## The three things that make it different
+
+**Nobody is there to notice a failure.** In a house you live in, you find out a camera has stopped because you looked. In an empty house you find out when you need footage, which is the worst possible moment. That makes remote health visibility more important than another camera.
+
+**Mains power is not dependable enough to assume.** Long outages are normal, and a system that stops recording during one is a system that was not there. This is why solar and 4G cameras do so much of the work on this coast - no trenching, no dependence on a supply that drops, and nothing to reinstall if the plot changes hands.
+
+**Two people need access, and not the same access.** The owner is often out of the country. A caretaker, a manager or a cleaner is on site. Giving the caretaker the admin account is how a system gets reconfigured by somebody with good intentions; giving them nothing is how you end up being phoned in another time zone to check whether the gate is shut. That split is a configuration decision made at handover, and it is the part most installers skip.
+
+## What it costs
+
+| Setup | What it is | Total ex VAT |
+|---|---|---:|
+| [Wire-Free Solar 4G](/solutions/wire-free-solar-4g-camera) | One solar camera on its own SIM, recording to a card. No mains, no cabling, no recorder. | ${kes(solar.subtotal)} |
+| [Holiday Home / Airbnb](/solutions/holiday-home-airbnb-cctv) | Two cameras covering the approach and the entrance, card recording, remote viewing for owner and caretaker. | ${kes(holiday.subtotal)} |
+| [Coast-Spec CCTV](/solutions/coast-spec-4-camera-cctv) | Four cameras, a recorder and a drive, built for salt: sealed IP66 boxes and stainless fixings throughout. | ${kes(coast.subtotal)} |
+
+Each link opens the complete bill of materials with a price on every line.
+
+Which of those is right depends less on the size of the house than on whether anybody is there. A cottage let out through the season and a four-bedroom villa used three weeks a year are different jobs.
+
+## Where to point them
+
+In this order, because it is the order things actually happen:
+
+1. **The approach and the gate.** Almost everything that matters is decided here, and it is the only camera that gets you a face and a vehicle together. Two angles on a gate - one for the vehicle, one for whoever walks in beside it - is worth more than two extra cameras elsewhere.
+2. **The main entrance.** Who came in, when, and whether they had a key.
+3. **The boundary where it is weakest.** Usually where it meets a plot that is still empty, or where vegetation gives cover.
+
+Inside the house is normally the wrong instinct. If someone is already inside, the useful footage was taken outside twenty minutes earlier.
+
+## The legal part, for a let property
+
+If you let the house out, guests have a reasonable expectation of privacy and Kenya's Data Protection Act 2019 applies to you as much as to a business. Practically:
+
+- Cameras cover approaches, entrances and the boundary. Never a bedroom, a bathroom, or inside a space a guest has exclusive use of.
+- Say in the listing that there is exterior CCTV. Every major platform requires disclosure, and an undisclosed camera found by a guest is a delisting and a refund, not a warning.
+- Do not run indoor cameras in a let property. There is no version of that which ends well.
+
+We will tell you if a camera position we have been asked for is one we think you should not have.
+
+## Salt, again
+
+Diani and Galu are as exposed as anywhere we work. What fails is never the camera - it is the junction box, the fixings and the cable entry. Sealed boxes, stainless screws and a proper gland at every entry are the difference between a system still working in year three and one that starts dropping a channel in month eight. [The full version of that is here](/blog/cctv-kenyan-coast-salt-air-humidity-what-survives).
+
+## If you are not in the country
+
+That is normal for this work, and it is worth saying how it goes. Send photographs and a rough plan on WhatsApp and we can price it without a visit. The survey happens with whoever is on site. Photographs of the finished installation go to you, and remote viewing is set up on your phone before we leave, wherever your phone is.
+
+${kes(context.siteSurveyFee)} for the survey, credited to your invoice. ${context.depositPercent}% deposit to begin, balance on completion, and ${context.warrantyMonths} months on workmanship.
+
+Nobody else on this coast is building specifically for this market, and it is the highest-value work we do.`,
+      faq: [
+        {
+          question: "What CCTV works in a holiday home with no reliable mains power?",
+          answer: `A solar camera with its own 4G SIM, recording to a card in the camera. There is no recorder to keep powered, no cabling to trench and nothing that stops working during an outage. One is ${kes(solar.subtotal)} installed, excluding VAT, and a two-camera holiday-home setup is ${kes(holiday.subtotal)}.`,
+        },
+        {
+          question: "Can my caretaker see the cameras without controlling the system?",
+          answer:
+            "Yes, and they should. We set up separate access at handover so a caretaker can view the cameras they need without being able to reconfigure the system, delete footage or add users. Getting that split right is the part of a holiday-home installation most installers skip.",
+        },
+        {
+          question: "Can I put cameras inside a house I rent out on Airbnb?",
+          answer:
+            "No, and we will not fit them. Guests have a reasonable expectation of privacy, Kenya's Data Protection Act 2019 applies, and every major letting platform requires disclosure of exterior cameras and prohibits interior ones in private spaces. Exterior cameras on approaches and entrances, disclosed in the listing, are both legal and effective.",
+        },
+        {
+          question: "Do I need to be there for the installation?",
+          answer:
+            "No. Most of the owners we do this work for are out of the country. We price from photographs and a plan over WhatsApp, survey with whoever is on site, send you photographs of the finished job, and set up remote viewing on your phone wherever you are.",
         },
       ],
     },

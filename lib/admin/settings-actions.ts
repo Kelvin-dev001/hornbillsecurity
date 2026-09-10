@@ -81,6 +81,7 @@ export async function saveSiteSettingsAction(formData: FormData): Promise<void> 
     warrantyMonths: int("warrantyMonths", current.warrantyMonths),
     cancellationNoticeMonths: int("cancellationNoticeMonths", current.cancellationNoticeMonths),
     facebookUrl: optional("facebookUrl"),
+    googleReviewUrl: optional("googleReviewUrl"),
     instagramUrl: optional("instagramUrl"),
     tiktokUrl: optional("tiktokUrl"),
     youtubeUrl: optional("youtubeUrl"),

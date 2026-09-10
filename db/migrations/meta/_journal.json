@@ -78,6 +78,34 @@
       "when": 1788785067745,
       "tag": "0010_add_brand_is_manufacturer",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789028404239,
+      "tag": "0011_project_case_study_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1789028955336,
+      "tag": "0012_quote_review_requested",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1789028979570,
+      "tag": "0013_site_settings_google_review_url",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1789038054482,
+      "tag": "0014_posts_seed_owned",
+      "breakpoints": true
     }
   ]
 }

@@ -73,6 +73,9 @@ export async function savePostAction(formData: FormData): Promise<void> {
     seoTitle: String(formData.get("seoTitle") ?? "").trim() || null,
     seoDescription: String(formData.get("seoDescription") ?? "").trim() || null,
     published: publish,
+    // Saving an article hands it to the owner: from here on `npm run db:seed`
+    // leaves it alone, even if the seed still carries a version of it.
+    seedOwned: false,
   };
 
   if (id) {

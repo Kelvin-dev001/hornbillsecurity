@@ -350,26 +350,33 @@ async function main() {
       depositPercent: siteSettingsSeed.depositPercent,
     });
 
-    // Inserted if absent, refreshed only while the seed still owns the row.
+    // Inserted if absent, refreshed only while posts.seed_owned is still true.
     //
-    // "Owns" means updated_at is still equal to created_at — nobody has edited
-    // it in admin. That distinction matters in both directions: a correction to
-    // a launch article (an invented figure, a wrong link) has to be deliverable
-    // by re-seeding, and an article the owner has since rewritten must never be
-    // silently overwritten by a re-seed.
+    // That distinction matters in both directions: a correction to a launch
+    // article — a wrong figure, a dead link — has to be deliverable by
+    // re-seeding, and an article the owner has rewritten must never be
+    // overwritten by one. Every save from the admin portal clears the flag.
+    //
+    // The first version of this inferred ownership from `updated_at =
+    // created_at` and was wrong by construction: db/migrations/0009_content.sql
+    // puts a `posts_set_updated_at` BEFORE UPDATE trigger on the table, so the
+    // seed's own refresh bumped the timestamp and every article immediately
+    // looked edited — silently making corrections undeliverable, which is the
+    // exact failure the mechanism exists to prevent. An explicit column cannot
+    // be fooled by a trigger.
     const existingPosts = await db
-      .select({ slug: posts.slug, createdAt: posts.createdAt, updatedAt: posts.updatedAt })
+      .select({ slug: posts.slug, seedOwned: posts.seedOwned })
       .from(posts);
     const ownedBySeed = new Set(
-      existingPosts
-        .filter((row) => row.updatedAt.getTime() === row.createdAt.getTime())
-        .map((row) => row.slug),
+      existingPosts.filter((row) => row.seedOwned).map((row) => row.slug),
     );
     const edited = new Set(
-      existingPosts.filter((row) => !ownedBySeed.has(row.slug)).map((row) => row.slug),
+      existingPosts.filter((row) => !row.seedOwned).map((row) => row.slug),
     );
 
-    const writablePosts = postRows.filter((row) => !edited.has(row.slug as string));
+    const writablePosts = postRows
+      .filter((row) => !edited.has(row.slug as string))
+      .map((row) => ({ ...row, seedOwned: true }));
     let refreshed = 0;
     if (writablePosts.length > 0) {
       await db

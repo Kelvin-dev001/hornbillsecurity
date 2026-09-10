@@ -391,7 +391,7 @@ export function serviceJsonLd(options: {
   description: string;
   path: string;
   settings: SiteSettings;
-  areaServed?: { name: string; county: string }[];
+  areaServed?: { name: string; county: string; lat?: number | null; lng?: number | null }[];
   offers: { name: string; price: number; url: string; unit?: string }[];
 }) {
   const { name, description, path, settings, areaServed, offers } = options;
@@ -418,10 +418,26 @@ export function serviceJsonLd(options: {
       name: settings.tradingName,
       telephone: `+254${settings.phone.replace(/^0/, "")}`,
     },
-    areaServed: (areaServed ?? settings.serviceCounties.map((county) => ({ name: county, county })))
+    areaServed: (
+      areaServed ??
+      settings.serviceCounties.map((county) => ({
+        name: county,
+        county,
+        lat: null,
+        lng: null,
+      }))
+    )
       .map((area) => ({
         "@type": "Place",
-        name: area.name === area.county ? `${area.county} County, Kenya` : `${area.name}, ${area.county} County, Kenya`,
+        name:
+          area.name === area.county
+            ? `${area.county} County, Kenya`
+            : `${area.name}, ${area.county} County, Kenya`,
+        // Coordinates where we have them. A single-area service page carries
+        // them; the hub, which lists ten, does not need ten geo points.
+        ...(area.lat != null && area.lng != null
+          ? { geo: { "@type": "GeoCoordinates", latitude: area.lat, longitude: area.lng } }
+          : {}),
       })),
     offers: offers.map((offer) => ({
       "@type": "Offer",
@@ -467,5 +483,60 @@ export function websiteJsonLd(settings: SiteSettings) {
       },
       "query-input": "required name=search_term_string",
     },
+  };
+}
+
+/**
+ * A listing page as an ItemList of Offers — docs/03 §3.
+ *
+ * Used where a page publishes a priced list that is not a product catalogue:
+ * the services rate card, and the packages index. itemListJsonLd() covers the
+ * Product case; this covers the Service and Offer case, which is the one almost
+ * nobody in this market emits because almost nobody publishes the prices.
+ */
+export function offerListJsonLd(options: {
+  name: string;
+  path: string;
+  settings: SiteSettings;
+  offers: { name: string; price: number; url: string; description?: string; unit?: string }[];
+}) {
+  const { name, path, settings, offers } = options;
+
+  const reviewed = settings.pricesUpdatedAt;
+  const validUntil = new Date(
+    Date.UTC(reviewed.getUTCFullYear(), reviewed.getUTCMonth() + 2, 0),
+  )
+    .toISOString()
+    .slice(0, 10);
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name,
+    url: absoluteUrl(path),
+    numberOfItems: offers.length,
+    itemListElement: offers.map((offer, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      item: {
+        "@type": "Offer",
+        name: offer.name,
+        ...(offer.description ? { description: offer.description } : {}),
+        url: absoluteUrl(offer.url),
+        price: offer.price,
+        priceCurrency: "KES",
+        priceValidUntil: validUntil,
+        ...(offer.unit
+          ? { eligibleQuantity: { "@type": "QuantitativeValue", unitText: offer.unit } }
+          : {}),
+        priceSpecification: {
+          "@type": "PriceSpecification",
+          price: offer.price,
+          priceCurrency: "KES",
+          valueAddedTaxIncluded: false,
+        },
+        seller: { "@id": absoluteUrl("/#business") },
+      },
+    })),
   };
 }

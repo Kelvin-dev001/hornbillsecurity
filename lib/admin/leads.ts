@@ -41,6 +41,8 @@ export type LeadRow = {
   source: string;
   notes: string | null;
   followUpAt: Date | null;
+  /** Null until a review has been asked for — see lib/admin/review-request.ts. */
+  reviewRequestedAt: Date | null;
   createdAt: Date;
   lineCount: number;
 };
@@ -61,6 +63,7 @@ export async function listLeads(status?: QuoteStatus): Promise<LeadRow[]> {
       source: quotes.source,
       notes: quotes.notes,
       followUpAt: quotes.followUpAt,
+      reviewRequestedAt: quotes.reviewRequestedAt,
       createdAt: quotes.createdAt,
       lineCount: sql<number>`jsonb_array_length(${quotes.lines})::int`,
     })

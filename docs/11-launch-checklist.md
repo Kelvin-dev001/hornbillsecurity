@@ -82,7 +82,30 @@ A build with a cold read cache produces a burst of prerender timeouts that then 
 
 It is noisy rather than broken, and a warm build produces none. If a Vercel build ever fails outright on this, raise the timeout rather than reducing the page count.
 
-## A caching bug that is fixed, and why it is written down here
+## The same caching bug, twice
+
+It is written up below because it came back, and the second time is the more
+useful lesson.
+
+**First time.** Articles were seeded, the site was rebuilt, and all five rendered
+as 404. Fixed with `lib/cache.ts` (a TTL on every cached reader) and a cache
+clear at the end of `npm run db:seed`.
+
+**Second time, in Sprint 5.** Two more articles were seeded and did exactly the
+same thing — even though the seed had cleared the cache. A `npm run db:migrate`
+and another build had run in between, and the migrate step does not clear
+anything, so a stale entry was back before the final build.
+
+The fix that actually closes it is structural rather than another place to
+remember: **a build must not trust a cache that can disagree with the
+database.** `scripts/clear-read-cache.mjs` is wired as `prebuild`, so every
+build — including Vercel's — starts from the database. Deduplication *within* a
+build still works; only reuse *between* builds is given up, and that reuse was
+buying a few seconds while risking a page that is silently wrong.
+
+Read the header comment in that script before removing it.
+
+## The original write-up
 
 Articles were seeded into the database, the site was rebuilt, and all five rendered as **404** while `generateStaticParams` cheerfully produced their slugs.
 

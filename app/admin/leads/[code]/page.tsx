@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ExternalLink, MessageCircle, Phone } from "lucide-react";
+import { Check, ExternalLink, MessageCircle, Phone, Star } from "lucide-react";
 
 import {
   AdminHeading,
@@ -14,7 +14,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/admin/auth";
 import { getLead, PIPELINE } from "@/lib/admin/leads";
-import { updateLeadAction } from "@/lib/admin/lead-actions";
+import { markReviewRequestedAction, updateLeadAction } from "@/lib/admin/lead-actions";
+import { buildReviewRequest } from "@/lib/admin/review-request";
 import { formatKes } from "@/lib/money";
 import { formatKenyanMobile } from "@/lib/quote/phone";
 import { getQuoteByCode } from "@/lib/quote/read";
@@ -41,6 +42,13 @@ export default async function LeadPage({
   ]);
 
   if (!lead || !quote) notFound();
+
+  const reviewRequest = buildReviewRequest({
+    settings,
+    customerName: lead.customerName,
+    customerPhone: lead.customerPhone,
+    area: lead.area,
+  });
 
   const followUp = lead.followUpAt
     ? lead.followUpAt.toISOString().slice(0, 10)
@@ -189,6 +197,76 @@ export default async function LeadPage({
               {formatKes(settings.siteSurveyFee)}, credited to the invoice
             </p>
           </Panel>
+
+          {/*
+            The review request, and only once the job is won. docs/05 Sprint 5
+            asks for a "review-request flow after job completion", and asking
+            before the deposit has landed is how you get a review you did not
+            want.
+          */}
+          {lead.status === "won" ? (
+            <Panel
+              title="Ask for a review"
+              description="docs/03 §5: Google Business Profile is the most-cited source in AI local answers, and AreaSpy — the strongest site in this market — has eight reviews while claiming 2,400+ clients."
+            >
+              {lead.reviewRequestedAt ? (
+                <p className="flex items-start gap-2 text-sm text-success">
+                  <Check className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                  <span>
+                    Asked{" "}
+                    <time dateTime={lead.reviewRequestedAt.toISOString()}>
+                      {new Intl.DateTimeFormat("en-GB", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                        timeZone: "Africa/Nairobi",
+                      }).format(lead.reviewRequestedAt)}
+                    </time>
+                    . Nobody needs asking twice.
+                  </span>
+                </p>
+              ) : (
+                <>
+                  {reviewRequest.missingReviewUrl ? (
+                    <p className="mb-3 rounded-control bg-warning/10 p-3 text-sm text-ink">
+                      No Google review link is set yet, so the message goes out without one — far
+                      less effective. Paste it into{" "}
+                      <Link
+                        href="/admin/settings"
+                        className="text-action underline underline-offset-4"
+                      >
+                        Business details
+                      </Link>{" "}
+                      once the Mombasa profile is verified.
+                    </p>
+                  ) : null}
+
+                  <p className="text-sm text-muted-foreground">
+                    Opens WhatsApp with this ready to send. Edit it there before you send if you
+                    want to.
+                  </p>
+                  <pre className="mt-3 max-h-56 overflow-auto rounded-control border border-line bg-paper-warm p-3 text-xs whitespace-pre-wrap text-muted-foreground">
+                    {reviewRequest.message}
+                  </pre>
+
+                  <div className="mt-4 flex flex-col gap-2">
+                    <Button asChild size="cta">
+                      <a href={reviewRequest.href} target="_blank" rel="noopener noreferrer">
+                        <Star aria-hidden="true" />
+                        Open the request in WhatsApp
+                      </a>
+                    </Button>
+                    <form action={markReviewRequestedAction}>
+                      <input type="hidden" name="code" value={lead.code} />
+                      <Button type="submit" variant="outline" size="cta" className="w-full">
+                        Mark as asked
+                      </Button>
+                    </form>
+                  </div>
+                </>
+              )}
+            </Panel>
+          ) : null}
         </aside>
       </div>
     </>

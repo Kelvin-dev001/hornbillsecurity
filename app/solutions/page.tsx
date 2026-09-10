@@ -11,7 +11,7 @@ import {
   getSolutions,
 } from "@/lib/catalog/solutions";
 import { formatKes } from "@/lib/money";
-import { breadcrumbJsonLd, jsonLdScriptProps } from "@/lib/seo/json-ld";
+import { breadcrumbJsonLd, jsonLdScriptProps, offerListJsonLd } from "@/lib/seo/json-ld";
 import { absoluteUrl } from "@/lib/seo/origin";
 import { getSiteSettings } from "@/lib/site-settings";
 
@@ -76,6 +76,21 @@ export default async function SolutionsPage() {
   return (
     <>
       <script {...jsonLdScriptProps(breadcrumbJsonLd(TRAIL))} />
+      <script
+        {...jsonLdScriptProps(
+          offerListJsonLd({
+            name: `Complete CCTV systems, ${settings.serviceAreaLabel}`,
+            path: "/solutions",
+            settings,
+            offers: solutions.map((solution) => ({
+              name: solution.name,
+              description: solution.summary,
+              price: solution.total,
+              url: `/solutions/${solution.slug}`,
+            })),
+          }),
+        )}
+      />
 
       <div className="mx-auto max-w-(--container-page) px-4 py-8 sm:px-6 sm:py-12">
         <Breadcrumbs trail={TRAIL} />

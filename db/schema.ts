@@ -130,6 +130,16 @@ export const siteSettings = pgTable(
 
     // ── Social ───────────────────────────────────────────────────────────────
     facebookUrl: text("facebook_url"),
+    /**
+     * The Google Business Profile "write a review" short link.
+     *
+     * Null until the Mombasa profile is verified (docs/09 item 7). The
+     * review-request flow in the lead pipeline uses it if it is set and asks the
+     * owner to add it if not — a review request with no link in it is a request
+     * nobody acts on, and docs/03 §5 rates GBP reviews the highest-return single
+     * asset on the whole off-page list.
+     */
+    googleReviewUrl: text("google_review_url"),
     tiktokUrl: text("tiktok_url"),
     instagramUrl: text("instagram_url"),
     youtubeUrl: text("youtube_url"),
@@ -831,6 +841,20 @@ export const quotes = pgTable(
      * overview leads with everything due or overdue.
      */
     followUpAt: timestamp("follow_up_at", { withTimezone: true }),
+    /**
+     * When a review was asked for, so nobody is asked twice.
+     *
+     * docs/05 Sprint 5 asks for a "review-request flow after job completion",
+     * and docs/03 §5 explains why it earns its place: Google Business Profile is
+     * the most-cited source in AI local answers (~67% of Google AI Overview
+     * local citations), and AreaSpy — the strongest site in this market — has
+     * eight reviews while claiming 2,400+ clients. A steady four to eight a
+     * month, sustained and non-bursty, outpaces everyone.
+     *
+     * A timestamp rather than a boolean because "asked, three months ago" and
+     * "asked, yesterday" are different situations.
+     */
+    reviewRequestedAt: timestamp("review_requested_at", { withTimezone: true }),
     pdfUrl: text("pdf_url"),
 
     /**
@@ -926,6 +950,23 @@ export const posts = pgTable(
     seoDescription: text("seo_description"),
     publishedAt: timestamp("published_at", { withTimezone: true }),
     published: boolean("published").notNull().default(false),
+    /**
+     * True while this article is still exactly as the seed wrote it.
+     *
+     * The launch articles in db/seed/posts.ts are generated from the pricing
+     * engine, so a correction to one — a wrong figure, a dead link — has to be
+     * deliverable by re-seeding. But an article the owner has since rewritten
+     * must never be silently overwritten by a re-seed. This flag is what
+     * separates the two: the seed writes it true, and every save from the admin
+     * portal sets it false.
+     *
+     * The first attempt inferred this from `updated_at = created_at`, which was
+     * wrong by construction — db/migrations/0009_content.sql puts a
+     * `posts_set_updated_at` BEFORE UPDATE trigger on this table, so the seed's
+     * own refresh bumps the timestamp and every article immediately looks
+     * edited. An explicit column cannot be fooled by a trigger.
+     */
+    seedOwned: boolean("seed_owned").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -944,8 +985,29 @@ export const projects = pgTable("projects", {
   clientNamedOk: boolean("client_named_ok").notNull().default(false),
   locationId: uuid("location_id").references(() => locations.id, { onDelete: "set null" }),
   categoryId: uuid("category_id").references(() => categories.id, { onDelete: "set null" }),
+  /**
+   * The sector, for a client we may not name.
+   *
+   * docs/09 item 22 records written permission for exactly two clients. Every
+   * other case study has to describe itself without identifying anybody — "a
+   * logistics yard on the Mariakani road" — and a case study with no client and
+   * no sector is a case study nobody believes.
+   */
+  sector: text("sector"),
   summary: text("summary").notNull(),
   challenge: text("challenge"),
+  /**
+   * What the site itself imposed: salt exposure, no mains, a ferry crossing, an
+   * estate's access rules, a 200 m boundary.
+   *
+   * docs/05 Sprint 5 asks for a case study carrying "the brief, the site
+   * conditions, the equipment specified and why, photos, and the outcome", and
+   * the owner wants them "documented vividly enough that a potential client
+   * believes them". Site conditions are the field that does that work: anybody
+   * can claim an installation, and only somebody who was there can tell you what
+   * the building made them do differently.
+   */
+  siteConditions: text("site_conditions"),
   solution: text("solution"),
   outcome: text("outcome"),
   images: text("images")

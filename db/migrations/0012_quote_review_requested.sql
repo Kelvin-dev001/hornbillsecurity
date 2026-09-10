@@ -1,0 +1,1 @@
+ALTER TABLE "quotes" ADD COLUMN "review_requested_at" timestamp with time zone;

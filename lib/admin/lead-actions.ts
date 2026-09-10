@@ -51,3 +51,29 @@ export async function setLeadStatusAction(formData: FormData): Promise<void> {
   revalidatePath("/admin/leads");
   redirect(String(formData.get("returnTo") ?? "/admin/leads"));
 }
+
+/**
+ * Records that a review has been asked for.
+ *
+ * Fired by the "Mark as asked" button beside the WhatsApp review link on a Won
+ * lead. It does not send anything — the owner sends the message himself from
+ * WhatsApp, so this only stamps that it happened, which is what stops the same
+ * customer being asked twice.
+ *
+ * docs/03 §5: a steady, non-bursty four to eight reviews a month is what
+ * outpaces this market. Bursts look manufactured and are the thing to avoid, so
+ * knowing who has already been asked matters more than it sounds.
+ */
+export async function markReviewRequestedAction(formData: FormData): Promise<void> {
+  await assertAdmin();
+
+  const code = String(formData.get("code") ?? "").trim();
+  if (!code) redirect("/admin/leads");
+
+  await db
+    .update(quotes)
+    .set({ reviewRequestedAt: new Date(), updatedAt: new Date() })
+    .where(eq(quotes.code, code));
+
+  redirect(`/admin/leads/${code}?status=saved`);
+}
