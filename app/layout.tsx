@@ -35,13 +35,18 @@ export async function generateMetadata(): Promise<Metadata> {
       template: `%s · ${settings.tradingName}`,
     },
     description: `Itemised, priced security installations in ${settings.serviceAreaLabel}. ${settings.authorisedPartnerBrands.join(", ")} authorised partner. ${settings.responsePromise}`,
-    alternates: { canonical: "/" },
     openGraph: {
       siteName: settings.tradingName,
       locale: "en_KE",
       type: "website",
     },
     robots: { index: true, follow: true },
+    // docs/03 §2 lists /rss.xml. Declared here so a browser or a reader finds
+    // it without being told the URL.
+    alternates: {
+      canonical: "/",
+      types: { "application/rss+xml": [{ url: "/rss.xml", title: settings.tradingName }] },
+    },
   };
 }
 

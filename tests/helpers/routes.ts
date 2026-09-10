@@ -47,6 +47,8 @@ const STATIC_ROUTES = [
   // scan; its parameterised variants take a different code path from the bare
   // URL and are scanned separately below.
   "/cctv-and-the-law-in-kenya",
+  "/glossary",
+  "/rss.xml",
   "/tools",
   "/tools/storage-calculator",
   "/tools/storage-calculator?cameras=32&mp=8&days=90",
@@ -68,7 +70,17 @@ const BUILDER_ROUTES = BUILDER_VARIANTS.map((variant) => `/build/cctv${variant.q
 
 export async function readPublicRoutes(sql: ReturnType<typeof connect>): Promise<string[]> {
   // These names line up positionally with the queries below. Keep them in step.
-  const [categories, items, solutions, locations, posts, projects, serviceLines, brands] =
+  const [
+    categories,
+    items,
+    solutions,
+    locations,
+    posts,
+    projects,
+    postCategorySlugs,
+    serviceLines,
+    brands,
+  ] =
     await Promise.all([
       sql<{ slug: string }[]>`select slug from categories where published order by slug`,
       sql<{ slug: string }[]>`
@@ -80,6 +92,14 @@ export async function readPublicRoutes(sql: ReturnType<typeof connect>): Promise
         select slug from posts where published and published_at is not null order by slug
       `,
       sql<{ slug: string }[]>`select slug from projects where published order by slug`,
+      // Article categories, derived the same way the pages derive them: from the
+      // articles themselves, so a category with nothing in it is not scanned
+      // because it does not exist.
+      sql<{ slug: string }[]>`
+        select distinct lower(regexp_replace(category, '[^a-zA-Z0-9]+', '-', 'g')) as slug
+        from posts where published and published_at is not null
+        order by slug
+      `,
       // Service lines — Sprint 6. Every one of these renders a rate table or an
       // equipment table, so they belong in the scan. The gate is the same one
       // the page itself uses: a service category somebody has written copy for,
@@ -116,6 +136,7 @@ export async function readPublicRoutes(sql: ReturnType<typeof connect>): Promise
     ...serviceLines.map((line) => `/services/${line.slug}`),
     ...brands.map((b) => `/price-list/${b.slug}`),
     ...posts.map((p) => `/blog/${p.slug}`),
+    ...postCategorySlugs.map((slug) => `/blog/category/${slug}`),
     ...projects.map((p) => `/projects/${p.slug}`),
   ];
 }

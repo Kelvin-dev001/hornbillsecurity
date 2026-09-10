@@ -58,6 +58,7 @@ const TRANSIENT_CODES = new Set([
   "08003", // connection does not exist
   "08006", // connection failure
   "53300", // too many connections
+  "XX000", // Supabase pooler, including EMAXCONNSESSION when the session pool is full
   "40001", // serialisation failure
   "ECONNRESET",
   "ETIMEDOUT",
@@ -69,6 +70,11 @@ function isTransient(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
   const code = (error as { code?: unknown }).code;
   if (typeof code === "string" && TRANSIENT_CODES.has(code)) return true;
+  // The Supabase pooler reports a full pool in the message rather than in a
+  // distinct code: "(EMAXCONNSESSION) max clients reached in session mode".
+  // Losing that race is a wait-and-retry, not a failure.
+  const message = (error as { message?: unknown }).message;
+  if (typeof message === "string" && message.includes("EMAXCONNSESSION")) return true;
   // postgres.js wraps the driver error; drizzle wraps that again.
   const cause = (error as { cause?: unknown }).cause;
   return cause ? isTransient(cause) : false;

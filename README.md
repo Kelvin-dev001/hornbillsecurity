@@ -149,6 +149,18 @@ tests/                the cost-price leak scan and the pricing rule
 docs/                 the business, schema, SEO and design documents
 ```
 
+## Two database traps
+
+**Which pooler.** `DATABASE_URL` is Supabase's *transaction* pooler (6543) and
+`DATABASE_URL_DIRECT` is the *session* pooler (5432). `db/index.ts` uses the
+session pooler **for builds** and the transaction pooler at runtime, and that is
+not a preference — prerendering ~200 routes over a multiplexed connection was
+observed crossing parameters between concurrent queries (`limit $1` arriving as
+`"f"`, a boolean from another query). The session pooler is capped at
+`pool_size: 15` for the project, so `experimental.cpus` is pinned to 2 and the
+build pool to 3. `docs/11-launch-checklist.md` has the full account; read it
+before changing either number.
+
 ## Caching, and the one trap in it
 
 Every reader in `lib/` wraps its query in `unstable_cache` with a tag, so an

@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { Breadcrumbs } from "@/components/breadcrumbs";
-import { getPosts } from "@/lib/content/queries";
+import { getPostCategories, getPosts } from "@/lib/content/queries";
 import { breadcrumbJsonLd, jsonLdScriptProps } from "@/lib/seo/json-ld";
 import { absoluteUrl } from "@/lib/seo/origin";
 import { getSiteSettings } from "@/lib/site-settings";
@@ -27,7 +27,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function BlogIndexPage() {
-  const [posts, settings] = await Promise.all([getPosts(), getSiteSettings()]);
+  const [posts, settings, categories] = await Promise.all([
+    getPosts(),
+    getSiteSettings(),
+    getPostCategories(),
+  ]);
 
   return (
     <>
@@ -43,6 +47,23 @@ export default async function BlogIndexPage() {
             comparing three of them on WhatsApp.
           </p>
         </header>
+
+        {categories.length > 1 ? (
+          <nav className="mt-8" aria-label="Article categories">
+            <ul className="flex flex-wrap gap-2">
+              {categories.map((category) => (
+                <li key={category.slug}>
+                  <Link
+                    href={`/blog/category/${category.slug}`}
+                    className="inline-flex h-9 items-center rounded-pill border border-line px-3 text-sm text-muted-foreground transition-colors hover:border-ink hover:text-ink"
+                  >
+                    {category.name} ({category.count})
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        ) : null}
 
         {posts.length === 0 ? (
           <p className="mt-10 text-muted-foreground">

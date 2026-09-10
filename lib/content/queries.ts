@@ -6,6 +6,7 @@ import { and, asc, desc, eq, isNotNull } from "drizzle-orm";
 
 import { db } from "@/db";
 import { faqs, locations, posts, projects, solutions, testimonials } from "@/db/schema";
+import { slugify } from "@/lib/slug";
 import { CACHE_TTL_SECONDS, readWithRetry } from "@/lib/cache";
 
 /**
@@ -239,3 +240,80 @@ export const getFaqs = cache(
     { tags: [CONTENT_CACHE_TAG], revalidate: CACHE_TTL_SECONDS },
   ),
 );
+
+/**
+ * Article categories, derived from the articles themselves — docs/05 Sprint 7.
+ *
+ * Derived rather than a table, deliberately. A categories table would let the
+ * owner create an empty category, and an empty category page is thin content
+ * for no benefit (docs/02 makes the same argument about catalogue categories).
+ * Typing "Costs" into the category field on an article is the whole workflow,
+ * and a category with nothing in it simply stops existing.
+ */
+export type PostCategory = {
+  slug: string;
+  name: string;
+  count: number;
+  /** Newest article in the category, for the sitemap's lastModified. */
+  updatedAt: string;
+};
+
+export const getPostCategories = cache(async (): Promise<PostCategory[]> => {
+  const posts = await getPosts();
+  const groups = new Map<string, PostCategory>();
+
+  for (const post of posts) {
+    const slug = slugify(post.category);
+    const existing = groups.get(slug);
+
+    if (existing) {
+      existing.count += 1;
+      if (post.updatedAt > existing.updatedAt) existing.updatedAt = post.updatedAt;
+    } else {
+      groups.set(slug, { slug, name: post.category, count: 1, updatedAt: post.updatedAt });
+    }
+  }
+
+  return [...groups.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+});
+
+export const getPostsByCategory = cache(async (slug: string) => {
+  const [posts, categories] = await Promise.all([getPosts(), getPostCategories()]);
+  const category = categories.find((entry) => entry.slug === slug);
+  if (!category) return null;
+
+  return { category, posts: posts.filter((post) => slugify(post.category) === slug) };
+});
+
+/**
+ * Related articles, by shared tags then by category.
+ *
+ * docs/05 Sprint 7 asks for related-content linking. The article page used to
+ * take the three most recent other articles, which on a seven-article site
+ * meant every page linked to the same three — useless to a reader and useless
+ * as an internal-linking signal. Tag overlap first, category second, recency
+ * last, which is the order a reader would rank them in.
+ */
+export const getRelatedPosts = cache(async (slug: string, limit = 3) => {
+  const posts = await getPosts();
+  const post = posts.find((entry) => entry.slug === slug);
+  if (!post) return [];
+
+  const tags = new Set(post.tags);
+
+  return posts
+    .filter((other) => other.slug !== slug)
+    .map((other) => ({
+      post: other,
+      shared: other.tags.filter((tag) => tags.has(tag)).length,
+      sameCategory: other.category === post.category ? 1 : 0,
+    }))
+    .sort(
+      (a, b) =>
+        b.shared - a.shared ||
+        b.sameCategory - a.sameCategory ||
+        (b.post.publishedAt ?? "").localeCompare(a.post.publishedAt ?? ""),
+    )
+    .slice(0, limit)
+    .map((entry) => entry.post);
+});

@@ -6,7 +6,7 @@ import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { Button } from "@/components/ui/button";
 import { readingMinutes, renderMarkdown } from "@/lib/content/markdown";
-import { getPostBySlug, getPosts } from "@/lib/content/queries";
+import { getPostBySlug, getPosts, getRelatedPosts } from "@/lib/content/queries";
 import {
   articleJsonLd,
   breadcrumbJsonLd,
@@ -60,10 +60,13 @@ export async function generateMetadata({
 
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const [post, settings, all] = await Promise.all([
+  const [post, settings, related] = await Promise.all([
     getPostBySlug(slug),
     getSiteSettings(),
-    getPosts(),
+    // Tag overlap, then category, then recency. Taking the three newest meant
+    // every article on a seven-article site linked to the same three, which is
+    // useless to a reader and useless as an internal-linking signal.
+    getRelatedPosts(slug),
   ]);
 
   if (!post) notFound();
@@ -74,7 +77,6 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
     { name: post.title, path: `/blog/${post.slug}` },
   ];
 
-  const related = all.filter((other) => other.slug !== post.slug).slice(0, 3);
   const html = renderMarkdown(post.body);
 
   return (

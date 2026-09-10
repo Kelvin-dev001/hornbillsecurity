@@ -3,10 +3,21 @@
  *
  * Two rules govern everything here.
  *
- * **Every number is generated, not typed.** The price tables below are rendered
- * from the same Bom objects the package pages render, handed over by
- * buildSolutions(). Nobody transcribes a figure into prose, so an article and
- * the package page it cites cannot disagree at launch. Each table says the month
+ * **Every number is generated, not typed — including illustrative ones.** The
+ * price tables below are rendered from the same Bom objects the package pages
+ * render, handed over by buildSolutions(), so an article and the package page it
+ * cites cannot disagree.
+ *
+ * The "including illustrative ones" was learned twice, the same way both times.
+ * A sentence like `a quotation saying "accessories — KES 25,000"` reads as
+ * obviously hypothetical to whoever writes it, and it is still a made-up price
+ * on a site whose entire claim is that its numbers are real. Both times the
+ * invented figure also collided with an actual distributor cost and the
+ * cost-price leak scan failed the build, which is the only reason it was caught
+ * rather than shipped.
+ *
+ * So: if a number appears in prose here, it comes from `context`. If you want a
+ * hypothetical, describe it without a figure. Each table says the month
  * it was generated and links to the live page, because a markdown body does not
  * re-price itself when the owner runs a price review — the article is a snapshot
  * with a date on it, which is what a cost guide honestly is.
@@ -24,6 +35,16 @@
  *   Tier 2 #13  CCTV on the Kenyan Coast: Salt Air, Humidity, and What Survives
  *   Tier 4 #28  Analog vs IP on a Real 8-Camera Job
  *   Tier 5 #30  How to Read a CCTV Quotation in Kenya
+ *
+ * Sprint 7 adds the Tier 3 pieces the catalogue can support without inventing a
+ * price — #15 cost per camera, #16 the three-bedroom house, #17 the shop or
+ * duka, #19 DVR and NVR prices, #20 cable, and #25 nanny cameras and what is
+ * legal. Tier 3 #22 (access control prices), #23 (biometric time and
+ * attendance) and #24 (automatic gate cost) are NOT written, for the same
+ * reason the fence articles are not: those categories hold no published prices,
+ * and a cost article with no costs in it is not a cost article. Tier 4 #26 and
+ * #27 (Hikvision vs Dahua, vs HiLook) need published Dahua and HiLook rows,
+ * which do not exist yet either.
  *
  * Sprint 5 adds the two Tier 2 pieces the coast strategy turns on:
  *
@@ -45,6 +66,15 @@ import type { NewPost } from "../schema";
 export type PostSeedContext = {
   boms: Map<string, Bom>;
   serviceRates: Map<string, { name: string; price: number | null | undefined; pricingUnit: string }>;
+  /**
+   * Published, priced catalogue items by SKU.
+   *
+   * The Tier 3 articles quote recorder and cable prices directly rather than
+   * only through a BOM, so they need the catalogue. Same rule as everywhere
+   * else in this file: an article never contains a number somebody typed, and
+   * `item()` throws rather than letting a missing SKU render as blank.
+   */
+  items: Map<string, { sku: string; name: string; price: number; unit: string }>;
   rules: Map<string, number>;
   pricesUpdatedAt: Date;
   vatRate: number;
@@ -101,6 +131,17 @@ function rate(context: PostSeedContext, slug: string): number {
   return service.price;
 }
 
+function item(context: PostSeedContext, sku: string) {
+  const found = context.items.get(sku);
+  if (!found) {
+    throw new Error(
+      `post seed: ${sku} is not published and priced, so an article cannot quote it. ` +
+        "Either price it or drop the reference — do not let it render as a blank.",
+    );
+  }
+  return found;
+}
+
 function rule(context: PostSeedContext, key: string): number {
   const value = context.rules.get(key);
   if (value === undefined) throw new Error(`post seed: no pricing rule ${key}`);
@@ -134,6 +175,24 @@ export function buildPosts(context: PostSeedContext): NewPost[] {
   const fourConsumables = four.lines
     .filter((line) => line.lineType === "consumable")
     .reduce((sum, line) => sum + line.extended, 0);
+
+  // Recorders and cable, quoted directly rather than only inside a BOM.
+  const dvr4 = item(context, "DVR-7200-4");
+  const dvr8 = item(context, "DVR-7200-8");
+  const dvr16 = item(context, "DVR-7200-16");
+  const dvr32 = item(context, "DVR-7200-32");
+  const nvr8 = item(context, "DS-7608NXI-K2/VPro");
+  const nvr32 = item(context, "DS-7632NXI-K2/16P/VPro");
+  const fourEssential = requireBom(context, "home-essential-4-camera-analog-cctv");
+  const nannyStarter = requireBom(context, "nanny-cam-starter");
+  const nannyPlus = requireBom(context, "nanny-cam-plus");
+  const trunking = item(context, "TRUNK-25X16-2M");
+  const coax = item(context, "CAB-RG59-SIAM-305");
+  const cat6 = item(context, "DS-1LN6U-ZCO");
+  const bnc = item(context, "CON-BNC-10");
+  const rj45 = item(context, "CON-RJ45-100");
+  const nannyBasic = item(context, "C1C-B");
+  const nannyBattery = item(context, "CB1");
 
   const fourLabour = four.subtotalLabour;
   const eightLabour = eight.subtotalLabour;
@@ -718,6 +777,447 @@ Nobody else on this coast is building specifically for this market, and it is th
           question: "Do I need to be there for the installation?",
           answer:
             "No. Most of the owners we do this work for are out of the country. We price from photographs and a plan over WhatsApp, survey with whoever is on site, send you photographs of the finished job, and set up remote viewing on your phone wherever you are.",
+        },
+      ],
+    },
+
+    // == Tier 3 - 15 =========================================================
+    {
+      slug: "cctv-cost-per-camera-kenya",
+      title: "What Does CCTV Cost Per Camera in Kenya?",
+      category: "Costs",
+      author: "Hornbill Smart Security Services",
+      excerpt: `Per camera it falls from about ${kes(Math.round(four.subtotal / 4))} on a four-camera job to ${kes(Math.round(sixteen.subtotal / 16))} on sixteen — because the recorder, the survey and the setup do not multiply. Why a "per camera" price is the wrong question, and what to ask instead.`,
+      seoTitle: `CCTV Cost Per Camera in Kenya: ${kes(Math.round(sixteen.subtotal / 16))} to ${kes(Math.round(four.subtotal / 4))}`,
+      seoDescription: `Real per-camera figures from complete installed systems: ${kes(Math.round(four.subtotal / 4))} at four cameras down to ${kes(Math.round(sixteen.subtotal / 16))} at sixteen, VAT-exclusive, itemised.`,
+      tags: ["pricing", "cctv", "per camera", "kenya"],
+      body: `"How much per camera?" is the first question almost everybody asks, and it is the one question a CCTV system cannot honestly answer with a single number. Here is why, with the real figures.
+
+Prices are VAT-exclusive, as at ${stamp}.
+
+## The actual numbers
+
+| System | Cameras | Total ex VAT | Per camera |
+|---|---:|---:|---:|
+| [Home Colour 4](/solutions/home-colour-4-camera-colorvu-cctv) | 4 | ${kes(four.subtotal)} | ${kes(Math.round(four.subtotal / 4))} |
+| [Business 8](/solutions/business-8-camera-colorvu-cctv) | 8 | ${kes(eight.subtotal)} | ${kes(Math.round(eight.subtotal / 8))} |
+| [Commercial 16](/solutions/commercial-16-camera-cctv) | 16 | ${kes(sixteen.subtotal)} | ${kes(Math.round(sixteen.subtotal / 16))} |
+
+The per-camera figure falls by roughly ${Math.round((1 - sixteen.subtotal / 16 / (four.subtotal / 4)) * 100)}% between the smallest and largest of those. Nothing got cheaper — the fixed costs simply spread further.
+
+## What does not multiply
+
+Three things on every job are paid once regardless of camera count:
+
+- **The recorder.** A ${dvr16.name} is ${kes(dvr16.price)} whether you put four cameras on it or sixteen.
+- **The survey.** ${kes(context.siteSurveyFee)}, once.
+- **A share of the setup.** Configuring remote viewing, retention and motion zones is largely per-system, not per-camera.
+
+What *does* multiply is the camera, its cable, its connectors, its share of the trunking, and ${kes(labourPoint)} of labour per point. That is the marginal cost of camera number nine, and it is far below the average cost of cameras one to eight.
+
+## So what should you ask instead?
+
+**"What is the total, itemised?"** Then divide it yourself if you want to. A per-camera price quoted before anybody has seen your site is either a guess or a bundle with things left out of it.
+
+If you do want a single number to sanity-check a quotation, use the marginal one: adding a camera to a system with a spare recorder channel should cost roughly the camera plus ${kes(labourPoint)} plus a few hundred shillings of cable and connectors. If somebody quotes you the *average* price for one extra camera, they are charging you for a second recorder you are not getting.
+
+## The trap in the other direction
+
+A very low per-camera price usually means one of three things, and it is worth knowing which:
+
+1. **A cheaper camera.** There is a factor of five between cameras that could all be described as "HD outdoor".
+2. **A smaller drive.** Which shows up as retention, not as a price — and you find out weeks later.
+3. **Labour hidden in the equipment lines.** So the total moves once the work starts.
+
+[Every package on this site](/solutions) shows the whole bill, so you can see which of those is happening. Or [build your own](/build/cctv) and get the same table for your own camera count.`,
+      faq: [
+        {
+          question: "How much does one CCTV camera cost installed in Kenya?",
+          answer: `On a new four-camera system the average works out at about ${kes(Math.round(four.subtotal / 4))} per camera including its share of the recorder, drive, cable and labour. Adding one camera to an existing system with a spare channel is much less — roughly the camera itself plus ${kes(labourPoint)} labour plus cable and connectors — because the recorder is already paid for.`,
+        },
+        {
+          question: "Is it cheaper per camera to install more cameras?",
+          answer: `Yes, substantially. Our own figures run from ${kes(Math.round(four.subtotal / 4))} per camera at four down to ${kes(Math.round(sixteen.subtotal / 16))} at sixteen, because the recorder, the survey and much of the configuration are paid once however many cameras hang off them.`,
+        },
+        {
+          question: "Why do installers not publish a per-camera price?",
+          answer:
+            "The honest reason is that it depends on the camera, the cable run and the recorder, so any single figure is wrong before it is written down. The less honest reason is that a bundled figure cannot be compared against anybody else's.",
+        },
+      ],
+    },
+
+    // == Tier 3 - 16 =========================================================
+    {
+      slug: "cctv-cost-three-bedroom-house-kenya",
+      title: "How Much Does CCTV Cost for a Three-Bedroom House in Kenya?",
+      category: "Costs",
+      author: "Hornbill Smart Security Services",
+      excerpt: `${kes(four.subtotal)} for the system most three-bedroom houses should actually buy, itemised line by line — and ${kes(fourEssential.subtotal)} for the cheaper build, with an honest account of what you give up.`,
+      seoTitle: `CCTV Cost for a 3-Bedroom House in Kenya: ${kes(fourEssential.subtotal)}–${kes(four.subtotal)}`,
+      seoDescription: `What CCTV costs on a three-bedroom Kenyan house: ${kes(fourEssential.subtotal)} for infrared, ${kes(four.subtotal)} for colour at night, both complete and itemised. VAT-exclusive.`,
+      tags: ["pricing", "residential", "cctv", "kenya"],
+      body: `A three-bedroom house is the most common job we quote, so this is the most useful number on the site for most people reading it.
+
+**Four cameras, complete and installed: ${kes(fourEssential.subtotal)} to ${kes(four.subtotal)} excluding VAT.** The difference between those two figures is whether you get colour footage after dark, and it is the single decision worth thinking about.
+
+## Where four cameras go on a three-bedroom house
+
+Almost every house we survey ends up with the same four, in this order of usefulness:
+
+1. **The gate or the drive.** The only position that reliably gets you a face and a vehicle together.
+2. **The front door.** Who came in, when, and whether they had a key.
+3. **The back or the service entrance.** Which is where most actual entries happen.
+4. **The weakest boundary.** Usually where the compound meets an empty plot or where vegetation gives cover.
+
+Inside the house is normally the wrong instinct. If somebody is already indoors, the footage that mattered was taken outside twenty minutes earlier.
+
+## The cheaper build — ${kes(fourEssential.subtotal)}
+
+${bomTable(fourEssential)}
+
+Live table: [Home Essential 4](/solutions/home-essential-4-camera-analog-cctv).
+
+Infrared night vision, so after dark the footage is black and white. It tells you a person was there, their build and their direction. It does not tell you the colour of their shirt or their car.
+
+## The one most houses should buy — ${kes(four.subtotal)}
+
+${bomTable(four)}
+
+Live table: [Home Colour 4](/solutions/home-colour-4-camera-colorvu-cctv).
+
+${kes(four.subtotal - fourEssential.subtotal)} more, and what it buys is colour at night. That is not a luxury feature — it is the difference between footage that identifies somebody and footage that shows that somebody was present. If you are going to spend ${kes(fourEssential.subtotal)}, this is where the next ${kes(four.subtotal - fourEssential.subtotal)} does the most work of any money on the quotation.
+
+## What is not in either figure
+
+- **VAT** at ${context.vatRate}%.
+- **Trenching, a pole, or mains electrical work.** Quoted separately after a survey if the site needs it.
+- **A UPS.** Worth having where the supply is unreliable, and not assumed here.
+- **Unusually long cable runs.** These assume about ${cablePerCamera} m per camera. Large compounds and older houses with no conduit run longer, and the survey is where that is established — before you commit.
+
+## If you are on the coast
+
+Add roughly ${kes(coast.subtotal - four.subtotal)} for the [coast specification](/solutions/coast-spec-4-camera-cctv): sealed IP66 junction boxes and stainless fixings throughout. On this coast the connections corrode long before the cameras do, and that is [worth understanding properly](/blog/cctv-kenyan-coast-salt-air-humidity-what-survives) before you compare quotes.
+
+## Getting your own number
+
+[Build it yourself](/build/cctv) — six questions and you get this exact table for your own house. A survey is ${kes(context.siteSurveyFee)}, credited against your invoice.`,
+      faq: [
+        {
+          question: "How much is CCTV for a 3-bedroom house in Kenya?",
+          answer: `${kes(fourEssential.subtotal)} to ${kes(four.subtotal)} excluding VAT for four cameras complete — cameras, recorder, surveillance drive, cabling, connectors, trunking, power and labour. The lower figure gives black-and-white footage at night; the higher one keeps full colour after dark, which is the difference between identifying somebody and merely recording that they were there.`,
+        },
+        {
+          question: "How many cameras does a three-bedroom house need?",
+          answer:
+            "Four covers it well: the gate or drive, the front door, the back or service entrance, and the weakest boundary. Six is worth it on a larger plot or where the boundary is long. More than that on a normal house usually means cameras watching each other.",
+        },
+        {
+          question: "Is colour night vision worth the extra money?",
+          answer: `On our figures it is ${kes(four.subtotal - fourEssential.subtotal)} on a four-camera job, and it is the best-value line on the quotation. Infrared footage tells you somebody was there. Colour footage tells you what they were wearing and what they were driving, which is the difference between useful and merely reassuring.`,
+        },
+      ],
+    },
+
+    // == Tier 3 - 17 =========================================================
+    {
+      slug: "cctv-for-shop-duka-kenya",
+      title: "CCTV for Your Shop or Duka: What It Costs and Where to Point It",
+      category: "Costs",
+      author: "Hornbill Smart Security Services",
+      excerpt: `${kes(shop.subtotal)} for a four-camera retail system, itemised — and the camera position that pays for the whole thing, which is not the one most shopkeepers ask for.`,
+      seoTitle: `CCTV for a Shop or Duka in Kenya: ${kes(shop.subtotal)} Itemised`,
+      seoDescription: `Retail CCTV in Kenya from ${kes(shop.subtotal)} complete: four cameras, thirty days of footage, itemised line by line. Where to point them and why the till comes first.`,
+      tags: ["retail", "pricing", "cctv", "shop"],
+      body: `Most shop owners ask for cameras on the door. The camera that actually pays for the system is the one on the till.
+
+**Four cameras, thirty days of footage, complete: ${kes(shop.subtotal)} excluding VAT.**
+
+## Why thirty days and not fourteen
+
+A domestic system can get away with two weeks because you notice a break-in the next morning. Retail loss does not work like that. A discrepancy surfaces at a stock count, which might be three weeks after the event, and footage that has already been overwritten is footage you paid for and cannot use.
+
+That is the main thing separating this package from the residential build: a bigger drive, sized for thirty days rather than fourteen.
+
+## The bill
+
+${bomTable(shop)}
+
+Live table: [Shop / Duka 4](/solutions/shop-duka-4-camera-cctv).
+
+## Where the four cameras go
+
+1. **Over the till, looking down at the counter and the hands.** This is the one. Most retail loss is at the point of sale, not through the door, and this is the only camera that shows a transaction that did not get rung up.
+2. **The entrance, at face height.** Not up in a corner looking at the tops of heads.
+3. **The stockroom or the back door.** Where deliveries arrive and where stock leaves.
+4. **The shop floor**, covering the aisle with the small expensive things in it.
+
+The order matters because if the budget only stretches to two cameras, it should be the till and the stockroom — not the two everybody assumes.
+
+## What it will and will not do
+
+It will show you a transaction that was not entered, a delivery that was short, and who was in the shop at a given minute. Reviewed weekly it changes behaviour, which is most of the value.
+
+It will not stop somebody walking out with something while you are serving another customer. And it is not an inventory system — it tells you what happened, not what is missing.
+
+## Staff, and the law
+
+If your staff are recorded, they must know. Notice, signage, and a stated reason. Consent is a weak basis in employment because an employee cannot freely refuse, so legitimate interest is normally the right footing — and continuous monitoring of one person at their station is a different thing that needs a written assessment first.
+
+The practical version is [on our law page](/cctv-and-the-law-in-kenya). It matters more in a shop than in a house, because a house does not have employees.
+
+## Bigger premises
+
+A supermarket or a hardware with several aisles is an eight-camera job at [${kes(eight.subtotal)}](/solutions/business-8-camera-colorvu-cctv). Beyond that the question stops being cameras and starts being whether anybody is watching them.
+
+Survey ${kes(context.siteSurveyFee)}, credited to your invoice. Or [price it yourself](/build/cctv) first.`,
+      faq: [
+        {
+          question: "How much does CCTV cost for a shop in Kenya?",
+          answer: `${kes(shop.subtotal)} excluding VAT for a complete four-camera retail system with thirty days of footage — cameras, recorder, surveillance drive, cabling, connectors, trunking, power and labour, every line published. A larger premises needing eight cameras is ${kes(eight.subtotal)}.`,
+        },
+        {
+          question: "Where should I put cameras in a shop?",
+          answer:
+            "Over the till first, looking down at the counter and the hands — most retail loss is at the point of sale rather than through the door, and it is the only camera that shows a transaction that was not rung up. Then the entrance at face height, the stockroom or back door, and the aisle with the expensive stock.",
+        },
+        {
+          question: "Can I record my staff at work?",
+          answer:
+            "In shared and work areas, yes, provided they know: notice, signage and a stated reason. Not in changing areas or rest areas. Continuous monitoring of an individual at their station is much harder to justify and needs a written impact assessment before it starts rather than after somebody complains.",
+        },
+        {
+          question: "How long should a shop keep footage?",
+          answer:
+            "Thirty days is what most retail sites can defend, because a stock discrepancy often surfaces weeks after the event. Fourteen days is usually too short for retail even though it is fine for a house.",
+        },
+      ],
+    },
+
+    // == Tier 3 - 19 =========================================================
+    {
+      slug: "dvr-nvr-prices-kenya-4-8-16-32-channel",
+      title: "DVR and NVR Prices in Kenya: 4, 8, 16 and 32 Channel",
+      category: "Costs",
+      author: "Hornbill Smart Security Services",
+      excerpt: `Every recorder we stock with its price and its part number — ${kes(dvr4.price)} for a four-channel DVR up to ${kes(nvr32.price)} for a 32-channel PoE NVR — and the sizing mistake that costs the most.`,
+      seoTitle: `DVR and NVR Price List Kenya: 4, 8, 16, 32 Channel — from ${kes(dvr4.price)}`,
+      seoDescription: `Current Kenyan DVR and NVR prices with full part numbers: ${kes(dvr4.price)} four-channel to ${kes(nvr32.price)} 32-channel PoE NVR. KES, VAT-exclusive, updated monthly.`,
+      tags: ["dvr", "nvr", "pricing", "recorders"],
+      body: `The recorder is the one part of a CCTV system you cannot upgrade halfway. Cameras can be added, a drive can be swapped, but a four-channel DVR takes four cameras and that is the end of it.
+
+Prices are VAT-exclusive, as at ${stamp}. The [full price list](/price-list) has every model.
+
+## Analog recorders (DVR)
+
+| Part number | Channels | Price |
+|---|---:|---:|
+| \`${dvr4.sku}\` | 4 | ${kes(dvr4.price)} |
+| \`${dvr8.sku}\` | 8 | ${kes(dvr8.price)} |
+| \`${dvr16.sku}\` | 16 | ${kes(dvr16.price)} |
+| \`${dvr32.sku}\` | 32 | ${kes(dvr32.price)} |
+
+These record analog cameras over coaxial cable and handle 5MP perfectly well, so an analog system in ${publishedAt.getUTCFullYear()} is not the compromise it was ten years ago.
+
+## IP recorders (NVR)
+
+| Part number | Channels | Price |
+|---|---:|---:|
+| \`${nvr8.sku}\` | 8 | ${kes(nvr8.price)} |
+| \`${nvr32.sku}\` | 32, with 16 PoE ports | ${kes(nvr32.price)} |
+
+An NVR costs more than a DVR of the same channel count, and some of that comes back: the PoE ports power the cameras down the same network cable, so there is no separate power supply and no power run to each camera.
+
+## The sizing mistake
+
+**Going from four cameras to five means a new recorder.** The step from a four-channel to an eight-channel DVR is ${kes(dvr8.price - dvr4.price)} — less than one camera. Buying the four-channel and then needing five costs you the whole ${kes(dvr4.price)} again.
+
+So the question at survey is not how many cameras you want now. It is how many you might want in three years. Most houses that start with four end up at six.
+
+## Plastic or metal chassis
+
+Both series exist at every channel count and the metal one costs a little more. It is not marketing: a metal chassis runs cooler, and a recorder that runs hot in a Mombasa ceiling void is a recorder with a shorter life and a drive under more stress. We fit metal as standard on anything that is not going in an air-conditioned room.
+
+## What the recorder does not decide
+
+**Retention.** That is cameras × resolution × days, and it is set by the drive, not the recorder. A 32-channel NVR with a 1TB drive holds a couple of days. [Size it properly](/tools/storage-calculator) — it is the number most quotations get wrong.
+
+## Two-way audio models
+
+The hybrid two-way-audio DVRs let you speak through a compatible camera. Genuinely useful at a gate or a yard; pointless everywhere else, and worth knowing that it only works with cameras that support it.
+
+Every recorder here is priced individually on the [price list](/price-list), and every [packaged system](/solutions) shows which one it uses and why.`,
+      faq: [
+        {
+          question: "How much is a DVR in Kenya?",
+          answer: `As at ${stamp}: ${kes(dvr4.price)} for a four-channel, ${kes(dvr8.price)} for eight, ${kes(dvr16.price)} for sixteen and ${kes(dvr32.price)} for a 32-channel, all excluding VAT and all metal-chassis models. An 8-channel 4K NVR for IP cameras is ${kes(nvr8.price)}.`,
+        },
+        {
+          question: "What is the difference between a DVR and an NVR?",
+          answer:
+            "A DVR records analog cameras over coaxial cable with a separate power run to each. An NVR records IP cameras over network cable and usually powers them down the same cable, so it is one run per camera instead of two. The NVR costs more up front and adding a camera later is easier.",
+        },
+        {
+          question: "Should I buy a bigger recorder than I need?",
+          answer: `Usually yes, and the arithmetic is stark: stepping from a four-channel to an eight-channel is ${kes(dvr8.price - dvr4.price)}, while discovering you need a fifth camera later costs you a whole second recorder. Most houses that start with four cameras end up at six.`,
+        },
+        {
+          question: "How many cameras can a 4-channel DVR take?",
+          answer:
+            "Four. It is a hard limit, not a recommendation, and it is the single most common reason a system has to be part-replaced two years in.",
+        },
+      ],
+    },
+
+    // == Tier 3 - 20 =========================================================
+    {
+      slug: "cctv-cable-rg59-vs-cat6-prices-how-much",
+      title: "CCTV Cable: RG59 vs Cat6, Prices, and How Much You Actually Need",
+      category: "Costs",
+      author: "Hornbill Smart Security Services",
+      excerpt: `A 305 m box of RG59 siamese is ${kes(coax.price)} and Cat6 is ${kes(cat6.price)} — and the metres, connectors and trunking together are usually the largest line on a quotation after the cameras. How to check the quantity.`,
+      seoTitle: `CCTV Cable Prices Kenya: RG59 vs Cat6, and How Many Metres You Need`,
+      seoDescription: `RG59 siamese ${kes(coax.price)} per 305 m box, Cat6 ${kes(cat6.price)}, connectors priced, and the ${cablePerCamera} m per camera rule for checking a quotation's cable quantity.`,
+      tags: ["cable", "pricing", "rg59", "cat6"],
+      body: `Cable is the line on a CCTV quotation nobody checks, and it is one of the largest. On our own four-camera system the cable, connectors, trunking, clips and power come to ${kes(fourConsumables)} — ${Math.round((fourConsumables / four.subtotal) * 100)}% of the whole job.
+
+Prices are VAT-exclusive, as at ${stamp}.
+
+## What it costs
+
+| Item | Part number | Unit | Price |
+|---|---|---|---:|
+| RG59 siamese coax + power | \`${coax.sku}\` | 305 m box | ${kes(coax.price)} |
+| Cat6 pure copper UTP | \`${cat6.sku}\` | 305 m box | ${kes(cat6.price)} |
+| BNC connectors | \`${bnc.sku}\` | pack of 10 | ${kes(bnc.price)} |
+| Cat6 RJ45 connectors | \`${rj45.sku}\` | pack of 100 | ${kes(rj45.price)} |
+| PVC trunking 25 × 16 mm | \`${trunking.sku}\` | 2 m length | ${kes(trunking.price)} |
+
+A 305 m box works out at about ${kes(Math.round(coax.price / 305))} a metre for coax and ${kes(Math.round(cat6.price / 305))} for Cat6, which is the number to have in your head when you read a quotation.
+
+## Which cable
+
+**RG59 siamese** for analog cameras. It is coax for the video with a power pair bonded alongside, so one run carries both. If your walls already have coax in them from an older system, a modern analog camera reuses it at 5MP — and that saving is often larger than the difference between an analog and an IP system in the first place.
+
+**Cat6** for IP cameras. One cable carries data and power together, so it is one run per camera instead of two. Cat6 is right for essentially every camera installation; Cat6A earns its extra cost on long runs, heavy interference, or a building you expect to still be using in fifteen years. Anyone selling you Cat6A for a four-camera house is selling you cable.
+
+**The 90 metre limit** on a copper run is the standard's limit, not a guideline. Past it you want fibre or a switch in between, and a quotation with a 120 m Cat6 run in it has a problem you should raise.
+
+## How much you need
+
+Our packages assume **${cablePerCamera} metres per camera** for a residential job and **${trunkingPerCamera} metres of trunking** to run it in. That is the figure to check a quotation against:
+
+- Four cameras ≈ ${cablePerCamera * 4} m, so one 305 m box covers it with plenty spare.
+- Sixteen cameras ≈ ${cablePerCamera * 16} m, still inside a box and a bit.
+
+The assumption breaks on large compounds, on older buildings with no conduit to reuse, and anywhere the recorder is not roughly central. A quotation that assumed a standard run on a site nobody walked is a quotation that will grow, which is why the survey exists.
+
+**Ask for the metres.** A quotation with a single cabling figure and no quantity behind it is the line to question first — on a four-camera job that line should be somewhere near ${kes(fourConsumables)}, and you cannot tell whether it is without the metres. It is the easiest place on a quotation to add margin invisibly, because nobody counts cable after it is in the wall.
+
+## Trunking, which is not optional
+
+The plastic channel the cable runs in where it is surface-mounted. It protects the cable, and it is the difference between an installation that looks finished and one that looks improvised. At ${trunkingPerCamera} m per camera it is often the largest single consumable line on a job — ${kes(trunking.price)} a length adds up fast, and a quotation that does not mention containment has either hidden it or is not going to fit any.
+
+## Honest note on these prices
+
+The cable, connector and trunking prices above are our estimated trade rates rather than confirmed distributor figures — our own supplier list covers cameras, recorders and drives but not consumables. They are marked as estimates on every bill of materials they appear in, and the affected share of each package total is published. We would rather tell you that than quietly present an estimate as a firm price.`,
+      faq: [
+        {
+          question: "How much does CCTV cable cost in Kenya?",
+          answer: `A 305 m box of RG59 siamese coax with power is ${kes(coax.price)} and a 305 m box of Cat6 pure copper is ${kes(cat6.price)}, both excluding VAT — roughly ${kes(Math.round(coax.price / 305))} and ${kes(Math.round(cat6.price / 305))} a metre. Connectors are ${kes(bnc.price)} for ten BNC or ${kes(rj45.price)} for a hundred RJ45.`,
+        },
+        {
+          question: "How many metres of cable do I need per camera?",
+          answer: `We budget ${cablePerCamera} metres per camera on a residential job plus ${trunkingPerCamera} metres of trunking to run it in. Four cameras is about ${cablePerCamera * 4} metres, so a single 305 m box covers it comfortably. Large compounds, older buildings with no conduit, and a recorder that is not roughly central all push it up — which is what the survey establishes.`,
+        },
+        {
+          question: "Can I use Cat6 for analog cameras?",
+          answer:
+            "Yes, with a balun at each end to convert the video onto twisted pair. It is a common and sensible retrofit where Cat cable is already in the walls and coax is not.",
+        },
+        {
+          question: "Is Cat6A worth paying for?",
+          answer:
+            "On long runs, in heavy electrical interference, or when cabling a building once for the next fifteen years — yes. On a four-camera house, no. Cat6 is the correct specification for essentially every camera installation.",
+        },
+      ],
+    },
+
+    // == Tier 3 - 25 =========================================================
+    {
+      slug: "nanny-camera-prices-kenya-and-what-is-legal",
+      title: "Nanny Camera Prices in Kenya — and What Is Actually Legal",
+      category: "Buying",
+      author: "Hornbill Smart Security Services",
+      excerpt: `From ${kes(nannyBasic.price)} for an indoor camera to ${kes(nannyPlus.subtotal)} for a three-camera setup installed — and the four positions we will not fit one in, whatever you are willing to pay.`,
+      seoTitle: `Nanny Camera Prices Kenya from ${kes(nannyBasic.price)} — and What Is Legal`,
+      seoDescription: `Indoor and nanny camera prices in Kenya from ${kes(nannyBasic.price)}, installed and app-configured. Plus the positions that are not lawful, which almost nobody selling these will tell you.`,
+      tags: ["nanny camera", "indoor", "legal", "pricing"],
+      body: `This is the one category where the legal question matters more than the price, and where almost nobody selling the cameras will raise it. So the prices are below, and then the part that matters.
+
+Prices are VAT-exclusive, as at ${stamp}.
+
+## What they cost
+
+| Setup | What it is | Price |
+|---|---|---:|
+| \`${nannyBasic.sku}\` | ${nannyBasic.name} | ${kes(nannyBasic.price)} |
+| \`${nannyBattery.sku}\` | ${nannyBattery.name} | ${kes(nannyBattery.price)} |
+| [Nanny Cam Starter](/solutions/nanny-cam-starter) | One camera, fitted, app configured | ${kes(nannyStarter.subtotal)} |
+| [Nanny Cam Plus](/solutions/nanny-cam-plus) | Three cameras, fitted, app configured | ${kes(nannyPlus.subtotal)} |
+
+You can buy the camera itself online for close to our price and we are not going to pretend otherwise — the dealer-to-Jumia spread on consumer smart-home kit is thin. What the package adds is fitting it where it actually sees something, getting the app working on every phone that needs it, and setting the notification and retention behaviour so it is still switched on in a month.
+
+## Where they are legal
+
+In your own home, in shared and living areas, recording your own household: yes. That is the ordinary case and there is nothing difficult about it.
+
+Two conditions we would still hold you to:
+
+- **Tell the person.** A nanny, a house help, a driver — they should know a camera is there. Kenya's Data Protection Act 2019 applies to households more than most people assume, and a camera somebody discovers is a camera that ends an employment relationship badly and possibly a complaint.
+- **Audio is different from video.** Recording conversations is a higher bar than recording pictures. If you do not need the audio, turn it off.
+
+## Where they are not, and we will not fit them
+
+Four positions, and this is not negotiable at any price:
+
+1. **A bathroom.** Ever, for any reason.
+2. **A bedroom** — including a child's bedroom where a live-in worker sleeps or changes.
+3. **A live-in worker's own room.** It is their private space. That it is inside your house does not change it.
+4. **Anywhere in a property you let out** where a guest has exclusive use. Every major letting platform prohibits it, and it is a delisting and a refund rather than a warning.
+
+We have lost work over this list. It stays.
+
+## What they are actually good at
+
+Watching a room where a child is, in daylight, on a good Wi-Fi signal, with somebody occasionally looking at the app. That is a genuinely useful thing and it is what these are for.
+
+What they are poor at: anything outdoors — most of them are not rated for it whatever the listing says; anywhere the Wi-Fi is weak at the camera position, which no better camera will fix; and surviving the theft of the camera itself, because the footage is on a card inside it.
+
+## If you actually want security rather than reassurance
+
+An indoor Wi-Fi camera is not a security system. If the concern is entry rather than supervision, [a four-camera outdoor system](/solutions/home-colour-4-camera-colorvu-cctv) at ${kes(four.subtotal)} does a completely different job — and the useful footage of a break-in is almost always taken outside, before anybody got in.
+
+More on the legal side is [on our law page](/cctv-and-the-law-in-kenya), including what the ODPC's draft guidance for the sector actually asks for.`,
+      faq: [
+        {
+          question: "How much is a nanny camera in Kenya?",
+          answer: `From ${kes(nannyBasic.price)} for an indoor 1080p Wi-Fi camera, or ${kes(nannyStarter.subtotal)} for one fitted with the app configured on every phone that needs it. A three-camera setup installed is ${kes(nannyPlus.subtotal)}, all excluding VAT.`,
+        },
+        {
+          question: "Is it legal to put a camera in my house where my house help works?",
+          answer:
+            "In shared and living areas, generally yes — and you should tell them it is there. Not in a bathroom, not in a bedroom, and not in a live-in worker's own room, which is their private space even though it is in your house. We will decline to fit those positions.",
+        },
+        {
+          question: "Can I record audio as well?",
+          answer:
+            "Recording conversations is a higher legal bar than recording pictures, and most of the time you do not need it. If the camera has audio and you have no specific reason for it, switch it off.",
+        },
+        {
+          question: "Can I put a camera inside a house I rent out?",
+          answer:
+            "No, not in any space a guest or tenant has exclusive use of. Every major letting platform prohibits interior cameras and requires disclosure of exterior ones, and a guest who finds an undisclosed camera is a delisting and a refund rather than a warning.",
         },
       ],
     },

@@ -364,6 +364,19 @@ async function main() {
           { name: row.name, price: row.price, pricingUnit: row.pricingUnit },
         ]),
       ),
+      items: new Map(
+        seeded
+          .filter((row) => row.published && row.price !== null)
+          .map((row) => [
+            row.sku,
+            {
+              sku: row.sku,
+              name: row.name,
+              price: row.price as number,
+              unit: row.unit as string,
+            },
+          ]),
+      ),
       rules: ruleValues,
       pricesUpdatedAt: siteSettingsSeed.pricesUpdatedAt,
       vatRate: Number(siteSettingsSeed.vatRate),

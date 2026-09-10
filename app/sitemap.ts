@@ -4,7 +4,12 @@ import { getAllCategories, getCatalogLastModified } from "@/lib/catalog/queries"
 import { getItemSitemapEntries, listItems, brandFacets } from "@/lib/catalog/queries";
 import { getServiceLines } from "@/lib/catalog/services";
 import { getSolutionSitemapEntries } from "@/lib/catalog/solutions";
-import { getLocations, getPosts, getProjects } from "@/lib/content/queries";
+import {
+  getLocations,
+  getPostCategories,
+  getPosts,
+  getProjects,
+} from "@/lib/content/queries";
 import { absoluteUrl } from "@/lib/seo/origin";
 import { getSiteSettings } from "@/lib/site-settings";
 
@@ -40,6 +45,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     projects,
     catalogue,
     serviceLines,
+    postCategories,
   ] = await Promise.all([
     getSiteSettings(),
     getAllCategories(),
@@ -51,6 +57,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     getProjects(),
     listItems(),
     getServiceLines(),
+    getPostCategories(),
   ]);
 
   const catalogLastModified = catalogModified ? new Date(catalogModified) : settings.updatedAt;
@@ -157,6 +164,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     },
     {
+      url: absoluteUrl("/glossary"),
+      lastModified: settings.updatedAt,
+      changeFrequency: "monthly",
+      priority: 0.6,
+    },
+    {
       url: absoluteUrl("/tools"),
       lastModified: settings.updatedAt,
       changeFrequency: "monthly",
@@ -190,6 +203,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ]),
     // One page per service line — docs/05 Sprint 6. The CCTV line has its own
     // hand-written page, already listed above, so it is excluded here.
+    ...postCategories.map((category) => ({
+      url: absoluteUrl(`/blog/category/${category.slug}`),
+      lastModified: new Date(category.updatedAt),
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+    })),
     ...serviceLines
       .filter((line) => line.slug !== "cctv")
       .map((line) => ({

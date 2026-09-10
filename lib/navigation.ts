@@ -51,6 +51,7 @@ export const footerNav: { heading: string; items: NavItem[] }[] = [
       { href: "/blog", label: "Guides and costs", sprint: 4 },
       { href: "/faq", label: "FAQ", sprint: 4 },
       { href: "/cctv-and-the-law-in-kenya", label: "CCTV and the law", sprint: 7 },
+      { href: "/glossary", label: "Glossary", sprint: 7 },
     ],
   },
 ];

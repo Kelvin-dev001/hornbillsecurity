@@ -9,7 +9,34 @@ const nextConfig: NextConfig = {
    * themselves take milliseconds once the data is cached, so this is headroom
    * for a slow connection rather than for slow work.
    */
-  staticPageGenerationTimeout: 120,
+  // Raised from 120. The site is now 198 routes and every one of them reads from
+  // a single Supabase instance on a cold build (scripts/clear-read-cache.mjs
+  // clears the read cache deliberately, so that is by design). A page that is
+  // simply waiting behind other pages' queries is not a page that is broken, and
+  // 120 seconds was killing /projects — a page whose own queries are trivial —
+  // purely because it was unlucky in the queue.
+  staticPageGenerationTimeout: 240,
+
+  /**
+   * How many worker processes prerender at once.
+   *
+   * Pinned rather than left to the core count, because the connection budget has
+   * to be arithmetic somebody can check: the Supabase **session** pooler — which
+   * db/index.ts uses for builds, see the comment there for why — is capped at
+   * `pool_size: 15` for the whole project, and every worker holds its own pool.
+   *
+   * 2 workers × `max: 3` = 6 connections, comfortably inside the cap with room
+   * for the seed or a psql session running alongside. Left to the machine, a
+   * 12-core box spawns enough workers to blow through 15 and the losers fail
+   * with `(EMAXCONNSESSION) max clients reached in session mode`, which is how
+   * three builds in a row died here.
+   *
+   * It makes the build slower. A slow build that is correct beats a fast one
+   * that intermittently prerenders a page with another query's data in it.
+   */
+  experimental: {
+    cpus: 2,
+  },
 
   /**
    * The CCTV service line's page is hand-written at /services/cctv-installation

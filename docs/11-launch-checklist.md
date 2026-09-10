@@ -110,6 +110,50 @@ A build with a cold read cache produces a burst of prerender timeouts that then 
 
 It is noisy rather than broken, and a warm build produces none. If a Vercel build ever fails outright on this, raise the timeout rather than reducing the page count.
 
+## Which Supabase pooler, and why the build uses a different one
+
+Read this before changing `db/index.ts` or `experimental.cpus`.
+
+Three builds in a row failed here, with three different-looking errors that all
+had one cause.
+
+1. `57014 canceling statement due to statement timeout` on a trivial
+   `select … from site_settings limit 1`.
+2. `TypeError: Cannot read properties of undefined (reading 'map')` inside a
+   Drizzle array-column mapper.
+3. `invalid input syntax for type bigint: "f"` — on `limit $1`. `"f"` is
+   Postgres's text form of boolean **false**. A parameter from a different,
+   concurrent query had arrived on this one.
+
+The third is the one that matters. That is not a slow build, it is **results and
+parameters crossing between concurrent queries**, and it happened because
+`DATABASE_URL` is the *transaction* pooler (port 6543), which multiplexes many
+client connections onto fewer server connections — the right choice for
+serverless functions, and the wrong one for 198 routes prerendering at once in a
+handful of long-lived processes.
+
+Crossed parameters can return the wrong row to the wrong caller. On a site whose
+central guarantee is that a cost price never reaches a browser, that is not a
+class of bug to tune around.
+
+So:
+
+- **Builds use `DATABASE_URL_DIRECT`**, the session pooler (5432), where one
+  client connection means one server connection and nothing is multiplexed.
+  `db/index.ts` switches on `NEXT_PHASE === "phase-production-build"`.
+- **The runtime keeps the transaction pooler**, which is correct for short-lived
+  function invocations.
+- **The session pooler is capped at `pool_size: 15` for the whole project**, and
+  every prerender worker holds its own pool. So `experimental.cpus` is pinned to
+  2 and the build pool to 3 — 6 connections, checkable arithmetic, with room for
+  a seed or a psql session alongside. Left to the machine's core count, a 12-core
+  box spawns enough workers to blow past 15 and the losers die with
+  `(EMAXCONNSESSION) max clients reached in session mode`.
+- `lib/cache.ts` also treats a full pool as transient and retries it.
+
+The build is slower for it. A slow build that is correct beats a fast one that
+occasionally renders a page with another query's data in it.
+
 ## The same caching bug, twice
 
 It is written up below because it came back, and the second time is the more
