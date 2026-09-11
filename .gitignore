@@ -44,3 +44,7 @@ next-env.d.ts
 
 # Throwaway query scripts used while debugging. Real tooling lives in scripts/.
 scratch-*
+
+# Database dumps. These contain every cost_price in the catalogue — see
+# scripts/backup.mjs. Never tracked, never pasted anywhere.
+backups/

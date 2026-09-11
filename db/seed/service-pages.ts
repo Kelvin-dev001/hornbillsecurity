@@ -426,6 +426,42 @@ export const servicePageSeed: ServicePageSeed[] = [
     ],
   },
   {
+    slug: "installation-and-commissioning",
+    intro:
+      "The survey, the installation and the handover — the work itself, priced per point rather than per day. It is also where CCTV data-protection compliance gets decided, because where a camera points, how long footage is kept and who can see it are set at survey and not afterwards.",
+    includes: [
+      "A written survey report with camera positions marked up, yours to keep",
+      "Installation to the published bill of materials, with nothing added at invoice that was not on the quotation",
+      "Retention configured to a number you chose, and verified against the drive",
+      "Access split deliberately — who can view, who can export, who can reconfigure",
+      "Surveillance signage, which the transparency principle effectively requires",
+      "Remote viewing set up on every phone that needs it, and how to export a clip",
+    ],
+    notFor: [
+      "A camera position we think is unlawful. A bathroom, a bedroom, a live-in worker's own room, or inside a let property — we will say so at survey rather than after fitting it, and it has cost us jobs.",
+      "Signing off somebody else's design without surveying it ourselves.",
+      "A data protection impact assessment as a document we write for you. We will tell you when one is needed and what it has to cover; the assessment is yours, and for anything contentious it should have an advocate's eyes on it.",
+      "Retrospective compliance on a system we did not install, until we have surveyed it.",
+    ],
+    faq: [
+      {
+        question: "What does the site survey actually produce?",
+        answer:
+          "A written findings report and marked-up camera positions. It is yours whether or not you use us, which is the difference between it and a free survey — a free survey is a sales visit, and its cost is inside the quotation you are handed.",
+      },
+      {
+        question: "Can you make my existing CCTV compliant?",
+        answer:
+          "Usually, and it is mostly cheap: re-aim anything pointing off your property, put signage up, set a retention period you can justify, and separate the viewing account from the admin account. The expensive case is a system with no way to export one person's footage without exporting everybody's, which is a configuration problem rather than a hardware one.",
+      },
+      {
+        question: "Do I need a data protection impact assessment?",
+        answer:
+          "For high-risk processing, yes — Kenya's Data Protection Act 2019 requires it, and the ODPC's draft guidance for private security is explicit about it for surveillance. Monitoring staff continuously, covering a public space, or running cameras across multiple sites all point that way. We will tell you where you stand; we are not advocates and will not pretend to be.",
+      },
+    ],
+  },
+  {
     slug: "maintenance-and-monitoring",
     intro:
       "Scheduled maintenance and remote monitoring contracts. The difference between a system that works in year three and one that turns out to have stopped recording in month seven — which is what we find on most of the systems we are called to look at.",

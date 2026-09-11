@@ -9,8 +9,16 @@ import { cn } from "@/lib/utils";
  * mobile connection is a real state and not a hypothetical one.
  */
 
+/**
+ * `border-line-control`, not `border-line`.
+ *
+ * WCAG 2.1 AA §1.4.11 wants 3:1 on the visual boundary that identifies a
+ * control. `--line` is 1.29:1 on white — right for a decorative card border,
+ * which is exempt, and wrong here, where the border is the only thing showing
+ * where the field is. scripts/a11y-contrast.mjs asserts the difference.
+ */
 export const inputClass =
-  "h-11 w-full rounded-control border border-line bg-paper px-3 text-base text-ink " +
+  "h-11 w-full rounded-control border border-line-control bg-paper px-3 text-base text-ink " +
   "placeholder:text-muted-foreground/70 focus-visible:border-ring focus-visible:ring-3 " +
   "focus-visible:ring-ring/50 focus-visible:outline-none disabled:bg-paper-warm " +
   "disabled:text-muted-foreground";

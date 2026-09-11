@@ -13,8 +13,10 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx db/seed/index.ts",
+    "db:backup": "node scripts/backup.mjs",
     "docs:pricing": "node scripts/pricing-worksheet.mjs",
-    "test": "node --import tsx --test --test-concurrency=1 tests/*.test.ts",
+    "a11y:contrast": "node scripts/a11y-contrast.mjs",
+    "test": "node scripts/a11y-contrast.mjs && node --import tsx --test --test-concurrency=1 tests/*.test.ts",
     "test:unit": "node --import tsx --test tests/effective-price.test.ts",
     "test:leak": "node --import tsx --test tests/cost-price-leak.test.ts",
     "test:e2e": "node --import tsx --test tests/quote-e2e.test.ts"

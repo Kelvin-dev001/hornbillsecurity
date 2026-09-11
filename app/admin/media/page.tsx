@@ -51,7 +51,7 @@ export default async function MediaPage({
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/avif"
                 required
-                className="block w-full text-sm text-muted-foreground file:mr-3 file:h-11 file:rounded-control file:border file:border-line file:bg-paper-warm file:px-4 file:text-sm file:font-medium file:text-ink hover:file:bg-ink/5"
+                className="block w-full text-sm text-muted-foreground file:mr-3 file:h-11 file:rounded-control file:border file:border-line-control file:bg-paper-warm file:px-4 file:text-sm file:font-medium file:text-ink hover:file:bg-ink/5"
               />
             </Field>
 

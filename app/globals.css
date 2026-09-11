@@ -33,6 +33,18 @@
   --paper: #ffffff;
   --paper-warm: #faf8f6;
   --line: #e6e2de;
+  /**
+   * The border colour for interactive controls — inputs, selects, textareas.
+   *
+   * WCAG 2.1 AA §1.4.11 Non-text Contrast requires 3:1 for the visual boundary
+   * that identifies a control. `--line` is 1.29:1 on white, which is fine for a
+   * decorative card border (decoration is exempt) and a real failure on a form
+   * field, where the border is the only thing telling you where the input is.
+   *
+   * #918a82 is 3.41:1 on --paper and 3.22:1 on --paper-warm, so it passes on
+   * both surfaces the admin forms sit on. scripts/a11y-contrast.mjs asserts it.
+   */
+  --line-control: #918a82;
   --muted: #6b6660;
   --success: #0e7a4e;
   --warn: #b45309;
@@ -90,6 +102,9 @@
      lightens to 7.0:1. */
   --muted: #a39d95;
   --line: color-mix(in srgb, var(--paper) 14%, transparent);
+  /* Dark mode: a translucent light border reads against the dark ground, and
+     at 40% it clears 3:1 the same way #918a82 does on white. */
+  --line-control: color-mix(in srgb, var(--paper) 40%, transparent);
 
   --background: var(--ink);
   --foreground: var(--paper);
@@ -136,6 +151,7 @@
   --color-paper: var(--paper);
   --color-paper-warm: var(--paper-warm);
   --color-line: var(--line);
+  --color-line-control: var(--line-control);
   --color-success: var(--success);
   --color-warn: var(--warn);
   --color-danger: var(--danger);

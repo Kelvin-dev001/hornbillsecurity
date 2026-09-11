@@ -31,7 +31,7 @@ export function CopyableUrl({ url }: { url: string }) {
         value={url}
         onFocus={(event) => event.currentTarget.select()}
         aria-label="Image URL"
-        className="min-w-0 flex-1 rounded-control border border-line bg-paper-warm px-2 py-1 font-mono text-[0.7rem] text-muted-foreground"
+        className="min-w-0 flex-1 rounded-control border border-line-control bg-paper-warm px-2 py-1 font-mono text-[0.7rem] text-muted-foreground"
       />
       <button
         type="button"

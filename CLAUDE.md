@@ -128,6 +128,7 @@ docs/                   the documents listed below
 | `docs/10-content-calendar.md` | Every article, its target query, and its publish date |
 | `docs/11-launch-checklist.md` | Launch state: what is done in the code, what needs the owner, and the view-source price evidence |
 | `docs/12-distributor-pricing-worksheet.md` | **Generated.** Every row waiting on a price from the owner, by SKU. `npm run docs:pricing` |
+| `docs/13-monthly-price-review-runbook.md` | The owner's recurring monthly job, step by step |
 
 ## 9. Facts about the business (use these, do not invent)
 

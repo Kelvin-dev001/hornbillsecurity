@@ -50,6 +50,8 @@ re-running updates the row in place.
 | `npm run db:migrate` | Apply migrations (uses `DATABASE_URL_DIRECT`) |
 | `npm run db:seed` | Seed / re-seed everything (idempotent) |
 | `npm run docs:pricing` | Regenerate `docs/12-distributor-pricing-worksheet.md` — every row waiting on a price from the owner, by SKU |
+| `npm run db:backup` | `pg_dump` the public schema to a gitignored `backups/` dir. Contains cost prices — keep it off the Supabase account |
+| `npm run a11y:contrast` | WCAG AA contrast audit of the palette. Also runs first in `npm test` |
 | `npm run db:studio` | Drizzle Studio |
 
 There is deliberately no `db:push`. Migrations carry the RLS policies, and

@@ -110,6 +110,72 @@ A build with a cold read cache produces a burst of prerender timeouts that then 
 
 It is noisy rather than broken, and a warm build produces none. If a Vercel build ever fails outright on this, raise the timeout rather than reducing the page count.
 
+## Sprint 8: accessibility and performance
+
+### Accessibility — AA, and now enforced rather than remembered
+
+`CLAUDE.md` §2.8 has said "never put white text on `--brand-orange`" since
+Sprint 0, and until now that rule was enforced entirely by people remembering
+it. `scripts/a11y-contrast.mjs` computes it: it reads the tokens out of
+`app/globals.css`, works out the real WCAG 2.1 ratio for the 18 pairings the
+site actually renders, and exits non-zero on a failure. It runs first in
+`npm test`, before the five-minute route scan, because a palette regression
+should fail in a second.
+
+It reproduces the figures in `docs/04` exactly:
+
+| Pairing | Ratio | Verdict |
+|---|---:|---|
+| White on `--brand-orange` | 3.25 | **correctly fails** — the rule is real |
+| `--ink` on `--brand-orange` (the primary button) | 5.88 | pass |
+| White on `--action` (the safe accent) | 5.02 | pass |
+| `--muted` body text on white | 5.68 | pass |
+| `--action` link on the warm panel | 4.74 | pass |
+
+The pairing the audit is asserting *fails* is deliberate: if the palette ever
+changes so that white-on-orange passes, the test reports that too, because a
+rule about nothing should be retired rather than left in three documents.
+
+**One real defect it found.** Every admin form input used `border-line`, which
+is `#e6e2de` — **1.29:1** on white. That is fine for a decorative card border
+(WCAG exempts decoration) and a genuine 1.4.11 failure on a form field, where
+the border is the only thing showing where the input is. A new
+`--line-control` token at `#918a82` gives 3.41:1 on white and 3.22:1 on the
+warm panel, and the inputs, the file-picker button and the copyable URL field
+now use it. The audit asserts both surfaces.
+
+The rest of the structural sweep came back clean: all 12 `next/image` uses have
+`alt`, every icon is `aria-hidden`, every input has a label or an `aria-label`,
+the skip link and `<main>` landmark are present, `lang="en-KE"` is set, and
+every data table has a caption.
+
+### Performance — what is measured, and what is not
+
+**Not measured: Lighthouse.** It cannot be run from this environment, so any
+score here would be invented. It has to come from the owner or CI against the
+deployed URL.
+
+**Measured, from the production build:**
+
+| Metric | Value |
+|---|---|
+| Shared JavaScript, every page | **103 kB** |
+| Own JavaScript, per page | 148 B – 3.85 kB |
+| Prerendered pages | 173 |
+| Largest page | `/price-list`, **282 kB** of HTML |
+| Median page | **90 kB** |
+| Third-party scripts | none |
+| Fonts | self-hosted via `next/font`, no external request |
+
+`/price-list` is the only page near the top of that range and it is deliberately
+the entire catalogue on one page — still 14× inside the 4 MB limit that
+`CLAUDE.md` §2.4 exists for, which is ChatGPT's fetcher rejecting anything
+larger outright.
+
+Everything carrying a price is statically prerendered, so the HTML arrives
+complete on first byte with no client-side fetch. That is the shape a good score
+comes from. It is still not a score — run it and record the real number.
+
 ## Which Supabase pooler, and why the build uses a different one
 
 Read this before changing `db/index.ts` or `experimental.cpus`.
